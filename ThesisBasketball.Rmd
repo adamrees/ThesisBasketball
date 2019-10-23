@@ -1,0 +1,187 @@
+---
+title: "Thesis"
+author: "Adam Rees"
+date: "October 6, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages('rvest')
+library(rvest)
+library(dplyr)
+require(XML)
+require(RCurl)
+require(stringr)
+require(png)
+#install.packages("XML")
+library(XML)
+
+library(sp)
+library(gstat)
+
+
+```
+
+
+
+```{r}
+
+year <- "2019"
+month <- "04"
+day <- "13"
+unknown <- "0"
+homeTeam <- "PHI"
+
+check <- paste0("https://www.basketball-reference.com/boxscores/pbp/", year, month, day, "0", homeTeam, ".html")
+check_url <- getURL(check)
+check_table <- readHTMLTable(check_url, which = 1)
+
+check_table
+
+
+```
+
+Old Code:
+
+lebron <- "https://www.basketball-reference.com/players/j/jamesle01.html"
+lebron_webpage <- read_html(lebron)
+lebron_table <- html_table(lebron_webpage, fill = TRUE)
+lebron_pergame <- data.frame(lebron_table)
+
+lebron_url <- paste0(lebron)
+lebron_url <- getURL(lebron_url)
+lebron_table <- readHTMLTable(lebron_url, which = 1)
+
+lebron_table
+
+
+
+
+```{r}
+url <- getURL("https://sports.yahoo.com/nba/los-angeles-lakers-golden-state-warriors-2019100509/?section=gamestream")
+
+
+postJump <- gregexpr("JUMPBALL", url)
+
+
+#We only want the data after the jump
+data <- substr(url, postJump, nchar(url))
+```
+
+
+```{r}
+
+
+#Get all of the shots 
+shots <- gregexpr("SHOT", data)
+
+
+newShots <- c()
+#TO DO: get rid of the free throws
+for (i in 1:249) {
+  checkFreeThrow <- substr(data, shots[[1]][i] - 500, shots[[1]][i])
+  checkSidelinePercentage <- substr(data, shots[[1]][i], shots[[1]][i] + 250)
+  if(!grepl("free throw", checkFreeThrow) & !grepl("0.1573", checkSidelinePercentage)){
+   newShots <- c(newShots, shots[[1]][i])
+  }
+}
+
+newShots <- newShots[!is.na(newShots)]
+
+ 
+
+player <- gregexpr("player", data)
+shotChar <- c()
+
+#look at all of the shooters
+for (i in 1:length(newShots)){
+  shotChar[i] <- player[[1]][which(player[[1]] > newShots[i] & player[[1]] < newShots[i]+47)]
+}
+
+
+shooterID <- c()
+for(i in 1:length(shotChar)){
+  shooterID[i] <- substr(data,shotChar[i]+9,shotChar[i]+12)
+}
+
+
+shotAndShooter <- data_frame(shotChar, shooterID)
+
+shotLocations <- shotAndShooter 
+shotLocations
+```
+
+
+
+```{r}
+
+numShots <- nrow(shotLocations)
+
+for(i in 1:numShots){
+
+findBaseline <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 120)
+charBaseline <- gregexpr("baseline_offset", findBaseline)
+charBaseline <- substr(findBaseline, charBaseline[[1]] + 28, charBaseline[[1]] + 34)
+
+
+if(grepl(",", charBaseline)){
+  findComma <- gregexpr(",", charBaseline)
+  charBaseline <- substr(charBaseline, 1, findComma[[1]] - 1)
+}
+
+findSideline <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 300)
+charSideline <- gregexpr("sideline_offset", findSideline)
+charSideline <- substr(findSideline, charSideline[[1]] + 28, charSideline[[1]] + 32)
+
+if(grepl(",", charSideline)){
+ findComma <- gregexpr(",", charSideline)
+ charSideline <- substr(charSideline, 1, findComma[[1]] - 1)
+}
+  
+shotLocations$baselineOffset[i] <- as.numeric(charBaseline)
+shotLocations$sidelineOffset[i] <- as.numeric(charSideline)
+
+findMakeMiss <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 460)
+makeMiss <- gregexpr("shot_made", findMakeMiss)
+makeMiss <- substr(findMakeMiss, makeMiss[[1]] + 12, makeMiss[[1]] + 12)
+
+if(makeMiss == "1"){
+  shotLocations$MakeMiss[i] <- 1
+} else{
+  shotLocations$MakeMiss[i] <- 0
+}
+
+
+
+shotLocations$sideBasket[i] <- substr(data, shotLocations$shotChar[i] + 62, shotLocations$shotChar[i] + 62)
+
+if(shotLocations$sideBasket[i] == 'R'){
+  shotLocations$X_LOC[i] <- as.double(shotLocations$baselineOffset[i] * 500)
+} else{
+  shotLocations$X_LOC[i] <- as.double(-1 * shotLocations$baselineOffset[i] * 500)
+}
+
+shotLocations$Y_LOC[i] <- shotLocations$sidelineOffset[i] * 850
+
+}
+shotLocations$X_LOC <- as.double(shotLocations$X_LOC)
+
+
+
+coordinates(shotLocations) <- ~X_LOC + Y_LOC
+plot(shotLocations)
+```
+
+
+
+
+
+
+
+
+
+
