@@ -10,14 +10,12 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-#install.packages('rvest')
 library(rvest)
 library(dplyr)
 require(XML)
 require(RCurl)
 require(stringr)
 require(png)
-#install.packages("XML")
 library(XML)
 
 library(sp)
@@ -26,9 +24,7 @@ library(gstat)
 
 ```
 
-
-
-```{r}
+Old Code
 
 year <- "2019"
 month <- "04"
@@ -42,8 +38,6 @@ check_table <- readHTMLTable(check_url, which = 1)
 
 check_table
 
-
-```
 
 Old Code:
 
@@ -79,20 +73,19 @@ data <- substr(url, postJump, nchar(url))
 #Get all of the shots 
 shots <- gregexpr("SHOT", data)
 
-
 newShots <- c()
 #TO DO: get rid of the free throws
 for (i in 1:249) {
   checkFreeThrow <- substr(data, shots[[1]][i] - 500, shots[[1]][i])
   checkSidelinePercentage <- substr(data, shots[[1]][i], shots[[1]][i] + 250)
-  if(!grepl("free throw", checkFreeThrow) & !grepl("0.1573", checkSidelinePercentage)){
+  if(!grepl("0.1573", checkSidelinePercentage)){
    newShots <- c(newShots, shots[[1]][i])
   }
 }
 
 newShots <- newShots[!is.na(newShots)]
 
- 
+
 
 player <- gregexpr("player", data)
 shotChar <- c()
@@ -120,6 +113,7 @@ shotLocations
 ```{r}
 
 numShots <- nrow(shotLocations)
+numShots
 
 for(i in 1:numShots){
 
@@ -170,13 +164,24 @@ shotLocations$Y_LOC[i] <- shotLocations$sidelineOffset[i] * 850
 }
 shotLocations$X_LOC <- as.double(shotLocations$X_LOC)
 
+shotLocations
 
+#coordinates(shotLocations) <- ~X_LOC + Y_LOC
 
-coordinates(shotLocations) <- ~X_LOC + Y_LOC
-plot(shotLocations)
+makes <- shotLocations %>% filter(shotLocations$MakeMiss == 1)
+misses <- shotLocations %>% filter(shotLocations$MakeMiss == 0)
+
+coordinates(makes) <- ~X_LOC + Y_LOC
+coordinates(misses) <- ~X_LOC + Y_LOC
+
+nrow(shotLocations)
+
+plot(makes, pch = 1) 
+points(misses, pch = 4)
 ```
 
-
+plot(x,y1,type="l",col="red")
+lines(x,y2,col="green")
 
 
 
