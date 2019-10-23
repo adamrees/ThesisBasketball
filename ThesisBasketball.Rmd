@@ -56,41 +56,49 @@ lebron_table
 
 
 ```{r}
-url <- getURL("https://sports.yahoo.com/nba/los-angeles-lakers-golden-state-warriors-2019100509/?section=gamestream")
+#url <- getURL("https://sports.yahoo.com/nba/los-angeles-lakers-golden-state-warriors-2019100509/?section=gamestream")
 
+#URL for the livestream
+url <- getURL("https://sports.yahoo.com/nba/los-angeles-lakers-los-angeles-clippers-2019102212/?section=gamestream")
 
+#Character where JUMPBALL happened
 postJump <- gregexpr("JUMPBALL", url)
 
 
 #We only want the data after the jump
-data <- substr(url, postJump, nchar(url))
+data <- substr(url, postJump[[1]], nchar(url))
 ```
 
 
 ```{r}
 
-
-#Get all of the shots 
+#Get all of the characters where shots were taken
 shots <- gregexpr("SHOT", data)
 
-newShots <- c()
-#TO DO: get rid of the free throws
-for (i in 1:249) {
-  checkFreeThrow <- substr(data, shots[[1]][i] - 500, shots[[1]][i])
-  checkSidelinePercentage <- substr(data, shots[[1]][i], shots[[1]][i] + 250)
-  if(!grepl("0.1573", checkSidelinePercentage)){
-   newShots <- c(newShots, shots[[1]][i])
-  }
-}
+length(shots[[1]])
 
+
+newShots <- shots[[1]]
+length(newShots)
+
+#Get rid of the free throws
+#for (i in 1:249) {
+  #checkBaselinePercentage <- substr(data, shots[[1]][i], shots[[1]][i] + 500)
+  #checkSidelinePercentage <- substr(data, shots[[1]][i], shots[[1]][i] + 250)
+  #"0.1573", checkSidelinePercentage) && 
+  #if(!grepl("free throw", checkSidelinePercentage)){
+  # newShots <- c(newShots, shots[[1]][i])
+ # }
+#}
+
+#get rid of the NAs
 newShots <- newShots[!is.na(newShots)]
 
-
-
+#all of the characters where player is mentioned (could be for anything)
 player <- gregexpr("player", data)
 shotChar <- c()
 
-#look at all of the shooters
+#Match the player to the shooter
 for (i in 1:length(newShots)){
   shotChar[i] <- player[[1]][which(player[[1]] > newShots[i] & player[[1]] < newShots[i]+47)]
 }
@@ -101,44 +109,50 @@ for(i in 1:length(shotChar)){
   shooterID[i] <- substr(data,shotChar[i]+9,shotChar[i]+12)
 }
 
-
+#data frame with every single shot and who shot it
 shotAndShooter <- data_frame(shotChar, shooterID)
 
-shotLocations <- shotAndShooter 
-shotLocations
+shotLocations <- shotAndShooter
+nrow(shotLocations)
 ```
 
 
 
 ```{r}
 
+#number of shots taken in the game
 numShots <- nrow(shotLocations)
 numShots
 
+#go through every single shot taken
 for(i in 1:numShots){
 
+#Find the baseline offset by getting a large string after the shot, finding where it says baseline offset and taking the number after it
 findBaseline <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 120)
 charBaseline <- gregexpr("baseline_offset", findBaseline)
 charBaseline <- substr(findBaseline, charBaseline[[1]] + 28, charBaseline[[1]] + 34)
 
-
+#baseline offset could be 0 to 4 characters - we want to just grab the number
 if(grepl(",", charBaseline)){
   findComma <- gregexpr(",", charBaseline)
   charBaseline <- substr(charBaseline, 1, findComma[[1]] - 1)
 }
 
+#Same code but now for sideline offset
 findSideline <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 300)
 charSideline <- gregexpr("sideline_offset", findSideline)
-charSideline <- substr(findSideline, charSideline[[1]] + 28, charSideline[[1]] + 32)
+charSideline <- substr(findSideline, charSideline[[1]] + 28, charSideline[[1]] + 33)
 
 if(grepl(",", charSideline)){
  findComma <- gregexpr(",", charSideline)
  charSideline <- substr(charSideline, 1, findComma[[1]] - 1)
 }
   
+#they were characters but we want it to be a double
 shotLocations$baselineOffset[i] <- as.numeric(charBaseline)
 shotLocations$sidelineOffset[i] <- as.numeric(charSideline)
 
+#find if the shot was made or missed
 findMakeMiss <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 460)
 makeMiss <- gregexpr("shot_made", findMakeMiss)
 makeMiss <- substr(findMakeMiss, makeMiss[[1]] + 12, makeMiss[[1]] + 12)
@@ -149,39 +163,61 @@ if(makeMiss == "1"){
   shotLocations$MakeMiss[i] <- 0
 }
 
-
-
+#we now need to find what side of the basket the shot was taken. This is needed because the baseline offset is the same number for different sides of the basket
 shotLocations$sideBasket[i] <- substr(data, shotLocations$shotChar[i] + 62, shotLocations$shotChar[i] + 62)
 
+#use this to create a new variable plotting the X Location
 if(shotLocations$sideBasket[i] == 'R'){
   shotLocations$X_LOC[i] <- as.double(shotLocations$baselineOffset[i] * 500)
 } else{
   shotLocations$X_LOC[i] <- as.double(-1 * shotLocations$baselineOffset[i] * 500)
 }
 
+#also want the y location
 shotLocations$Y_LOC[i] <- shotLocations$sidelineOffset[i] * 850
 
 }
+
+#even after the for loop some X vals where characters - make sure they are doubles
 shotLocations$X_LOC <- as.double(shotLocations$X_LOC)
 
-shotLocations
 
 #coordinates(shotLocations) <- ~X_LOC + Y_LOC
 
-makes <- shotLocations %>% filter(shotLocations$MakeMiss == 1)
-misses <- shotLocations %>% filter(shotLocations$MakeMiss == 0)
+
+
+#for(i in 1:nrow(shotLocations)){
+#  if(shotLocations$sidelineOffset[i] != '0.157' 
+#     & shotLocations$baselineOffset[i] != '0.00'){
+#    1+1
+#     }
+#}
+
+# TO DO - filter this such that you remove all of the ones with sidelineOffset to be
+# 0.157 AND baselineOffset to be 0.00
+shotLocations %>% filter(shotLocations$sidelineOffset == 0.00)
+
+
+
+
+shotsNoFT <- shotLocations %>% filter(!(shotLocations$sidelineOffset == 0.1573 & shotLocations$baselineOffset == 0.00))
+nrow(shotLocations)
+nrow(shotsNoFT)
+
+shotsNoFT
+
+
+makes <- shotsNoFT %>% filter(shotsNoFT$MakeMiss == 1)
+misses <- shotsNoFT %>% filter(shotsNoFT$MakeMiss == 0)
 
 coordinates(makes) <- ~X_LOC + Y_LOC
 coordinates(misses) <- ~X_LOC + Y_LOC
-
-nrow(shotLocations)
 
 plot(makes, pch = 1) 
 points(misses, pch = 4)
 ```
 
-plot(x,y1,type="l",col="red")
-lines(x,y2,col="green")
+
 
 
 
