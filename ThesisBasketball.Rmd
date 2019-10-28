@@ -59,11 +59,10 @@ lebron_table
 #url <- getURL("https://sports.yahoo.com/nba/los-angeles-lakers-golden-state-warriors-2019100509/?section=gamestream")
 
 #URL for the livestream
-url <- getURL("https://sports.yahoo.com/nba/los-angeles-lakers-los-angeles-clippers-2019102212/?section=gamestream")
+url <- getURL("https://sports.yahoo.com/nba/los-angeles-clippers-phoenix-suns-2019102621/?section=gamestream")
 
 #Character where JUMPBALL happened
 postJump <- gregexpr("JUMPBALL", url)
-
 
 #We only want the data after the jump
 data <- substr(url, postJump[[1]], nchar(url))
@@ -111,7 +110,9 @@ for(i in 1:length(shotChar)){
 
 #data frame with every single shot and who shot it
 shotAndShooter <- data_frame(shotChar, shooterID)
+table(shooterID)
 
+#you can add a filter here
 shotLocations <- shotAndShooter
 nrow(shotLocations)
 ```
@@ -130,32 +131,51 @@ for(i in 1:numShots){
 #Find the baseline offset by getting a large string after the shot, finding where it says baseline offset and taking the number after it
 findBaseline <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 120)
 charBaseline <- gregexpr("baseline_offset", findBaseline)
-charBaseline <- substr(findBaseline, charBaseline[[1]] + 28, charBaseline[[1]] + 34)
+baseString <- substr(findBaseline, charBaseline[[1]] + 28, charBaseline[[1]] + 34)
 
 #baseline offset could be 0 to 4 characters - we want to just grab the number
-if(grepl(",", charBaseline)){
-  findComma <- gregexpr(",", charBaseline)
-  charBaseline <- substr(charBaseline, 1, findComma[[1]] - 1)
+if(grepl(",", baseString)){
+  findComma <- gregexpr(",", baseString)
+  baseString <- substr(baseString, 1, findComma[[1]] - 1)
 }
+
 
 #Same code but now for sideline offset
 findSideline <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 300)
 charSideline <- gregexpr("sideline_offset", findSideline)
-charSideline <- substr(findSideline, charSideline[[1]] + 28, charSideline[[1]] + 33)
+sideString <- substr(findSideline, charSideline[[1]] + 28, charSideline[[1]] + 33)
 
-if(grepl(",", charSideline)){
- findComma <- gregexpr(",", charSideline)
- charSideline <- substr(charSideline, 1, findComma[[1]] - 1)
+if(grepl(",", sideString)){
+ findComma <- gregexpr(",", sideString)
+ sideString <- substr(sideString, 1, findComma[[1]] - 1)
 }
-  
+ 
+# An attempt to check if it is a free throw - was not working 
+#findFreeThrow <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 450)
+#ft <- grepl("free throw", findFreeThrow)
+#shotLocations$FreeThrow[i] <- ft
+
+
 #they were characters but we want it to be a double
-shotLocations$baselineOffset[i] <- as.numeric(charBaseline)
-shotLocations$sidelineOffset[i] <- as.numeric(charSideline)
+shotLocations$baselineOffset[i] <- as.numeric(baseString)
+shotLocations$sidelineOffset[i] <- as.numeric(sideString)
 
 #find if the shot was made or missed
 findMakeMiss <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 460)
 makeMiss <- gregexpr("shot_made", findMakeMiss)
 makeMiss <- substr(findMakeMiss, makeMiss[[1]] + 12, makeMiss[[1]] + 12)
+
+#find what team the player was on
+findTeam <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 460)
+teamCharacter <- gregexpr("team", findTeam)
+team <- substr(findTeam, teamCharacter[[1]] + 7, teamCharacter[[1]] + 8)
+
+if(grepl(",", team)){
+ findComma <- gregexpr(",", team)
+ team <- substr(team, 1, findComma[[1]] - 1)
+}
+
+shotLocations$Team[i] <- as.numeric(team)
 
 if(makeMiss == "1"){
   shotLocations$MakeMiss[i] <- 1
@@ -182,39 +202,29 @@ shotLocations$Y_LOC[i] <- shotLocations$sidelineOffset[i] * 850
 shotLocations$X_LOC <- as.double(shotLocations$X_LOC)
 
 
-#coordinates(shotLocations) <- ~X_LOC + Y_LOC
-
-
-
-#for(i in 1:nrow(shotLocations)){
-#  if(shotLocations$sidelineOffset[i] != '0.157' 
-#     & shotLocations$baselineOffset[i] != '0.00'){
-#    1+1
-#     }
-#}
-
-# TO DO - filter this such that you remove all of the ones with sidelineOffset to be
-# 0.157 AND baselineOffset to be 0.00
-shotLocations %>% filter(shotLocations$sidelineOffset == 0.00)
-
-
-
-
+#Filter out Free Throws
 shotsNoFT <- shotLocations %>% filter(!(shotLocations$sidelineOffset == 0.1573 & shotLocations$baselineOffset == 0.00))
-nrow(shotLocations)
-nrow(shotsNoFT)
 
 shotsNoFT
 
-
+#coordinates(shotsNoFT) <- ~X_LOC + Y_LOC
 makes <- shotsNoFT %>% filter(shotsNoFT$MakeMiss == 1)
 misses <- shotsNoFT %>% filter(shotsNoFT$MakeMiss == 0)
+
 
 coordinates(makes) <- ~X_LOC + Y_LOC
 coordinates(misses) <- ~X_LOC + Y_LOC
 
-plot(makes, pch = 1) 
+plot(makes, pch = 1)
 points(misses, pch = 4)
+
+
+#TESTING LOCATION
+findTeam <- substr(data, shotLocations$shotChar[1], shotLocations$shotChar[1] + 460)
+teamCharacter <- gregexpr("team", findTeam)
+team <- substr(findTeam, teamCharacter[[1]] + 7, teamCharacter[[1]] + 8)
+team
+
 ```
 
 
