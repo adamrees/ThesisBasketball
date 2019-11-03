@@ -21,6 +21,8 @@ library(XML)
 library(sp)
 library(gstat)
 
+#install.packages('rapportools')
+library(rapportools)
 
 ```
 
@@ -63,6 +65,8 @@ url <- getURL("https://sports.yahoo.com/nba/los-angeles-clippers-phoenix-suns-20
 
 #Character where JUMPBALL happened
 postJump <- gregexpr("JUMPBALL", url)
+
+starterStuff <- substr(url, 1, postJump)
 
 #We only want the data after the jump
 data <- substr(url, postJump[[1]], nchar(url))
@@ -119,15 +123,58 @@ nrow(shotLocations)
 
 
 
+
 ```{r}
 
 #number of shots taken in the game
 numShots <- nrow(shotLocations)
 numShots
 
+
+
 #go through every single shot taken
 for(i in 1:numShots){
+  
+fullString <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 450)
 
+timeChr <- gregexpr("clock", fullString)
+findTime <- substr(fullString, timeChr[[1]]+8, timeChr[[1]] + 12)
+
+if(!substr(findTime, 1, 1) == "1" | substr(findTime, 1, 2) == "1:"){
+  findTime <- substr(findTime, 1, 4)
+}
+if(substr(findTime, 1, 1) == ":"){
+  findTime <- paste("0", substr(findTime, 1, 3), sep = "") 
+}
+
+shotLocations$Time[i] <- findTime
+
+periodChr <- gregexpr("period", fullString)
+findPeriod <- substr(fullString, periodChr[[1]]+9, periodChr[[1]] + 9)
+
+shotLocations$Period[i] <- findPeriod
+
+homescoreChr <- gregexpr("home_score", fullString)
+findHomeScore <- substr(fullString, homescoreChr[[1]]+13, homescoreChr[[1]] + 15)
+if(grepl(",", findHomeScore)){
+  findComma <- gregexpr(",", findHomeScore)
+  findHomeScore <- substr(findHomeScore, 1, findComma[[1]] - 2)
+}
+x <- substr(findHomeScore, 3, 3)
+if(is.na(as.numeric(x)) & !is.empty(x)){
+  findHomeScore <- substr(findHomeScore, 1, 2)
+}
+
+shotLocations$HomeScore[i] <- findHomeScore
+
+
+#baseline offset could be 0 to 4 characters - we want to just grab the number
+if(grepl(",", baseString)){
+  findComma <- gregexpr(",", baseString)
+  baseString <- substr(baseString, 1, findComma[[1]] - 1)
+}
+
+    
 #Find the baseline offset by getting a large string after the shot, finding where it says baseline offset and taking the number after it
 findBaseline <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 120)
 charBaseline <- gregexpr("baseline_offset", findBaseline)
@@ -150,12 +197,6 @@ if(grepl(",", sideString)){
  sideString <- substr(sideString, 1, findComma[[1]] - 1)
 }
  
-# An attempt to check if it is a free throw - was not working 
-#findFreeThrow <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 450)
-#ft <- grepl("free throw", findFreeThrow)
-#shotLocations$FreeThrow[i] <- ft
-
-
 #they were characters but we want it to be a double
 shotLocations$baselineOffset[i] <- as.numeric(baseString)
 shotLocations$sidelineOffset[i] <- as.numeric(sideString)
@@ -175,7 +216,7 @@ if(grepl(",", team)){
  team <- substr(team, 1, findComma[[1]] - 1)
 }
 
-shotLocations$Team[i] <- as.numeric(team)
+shotLocations$Team[i] <- team
 
 if(makeMiss == "1"){
   shotLocations$MakeMiss[i] <- 1
@@ -198,8 +239,15 @@ shotLocations$Y_LOC[i] <- shotLocations$sidelineOffset[i] * 850
 
 }
 
+#get the home and away teams
+teams <- unique(shotLocations$Team)
+shotLocations$OpposingTeam <- ifelse(shotLocations$Team == teams[1], teams[2], teams[1])
+
+
 #even after the for loop some X vals where characters - make sure they are doubles
 shotLocations$X_LOC <- as.double(shotLocations$X_LOC)
+
+
 
 
 #Filter out Free Throws
@@ -219,12 +267,7 @@ plot(makes, pch = 1)
 points(misses, pch = 4)
 
 
-#TESTING LOCATION
-findTeam <- substr(data, shotLocations$shotChar[1], shotLocations$shotChar[1] + 460)
-teamCharacter <- gregexpr("team", findTeam)
-team <- substr(findTeam, teamCharacter[[1]] + 7, teamCharacter[[1]] + 8)
-team
-
+shotsNoFT
 ```
 
 
@@ -232,6 +275,53 @@ team
 
 
 
+
+
+EXTRA CODE:
+findHome <- gregexpr("home_team_id", data)
+homeTeam <- substr(data, findHome[[1]] + 21, findHome[[1]] + 22)
+
+if(grepl(",", homeTeam)){
+  findComma <- gregexpr(",", homeTeam)
+  homeTeam <- substr(homeTeam, 1, findComma[[1]] - 1)
+}
+
+findAway <- gregexpr("away_team_id", data)
+awayTeam <- substr(data, findAway[[1]] + 21, findAway[[1]] + 22)
+
+if(grepl(",", awayTeam)){
+  findComma <- gregexpr(",", awayTeam)
+  awayTeam <- substr(awayTeam, 1, findComma[[1]] - 1)
+}
+
+homeTeam <- as.numeric(homeTeam)
+awayTeam <- as.numeric(awayTeam)
+
+awayTeam
+
+
+EXTRA:
+
+An attempt to check if it is a free throw - was not working 
+findFreeThrow <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 450)
+ft <- grepl("free throw", findFreeThrow)
+shotLocations$FreeThrow[i] <- ft
+
+
+
+EXTRA: Home score works but away score doesnt
+awayscoreChr <- gregexpr("away_score", fullString)
+findAwayScore <- substr(fullString, awayscoreChr[[1]]+13, awayscoreChr[[1]] + 15)
+if(grepl(",", findAwayScore)){
+  findComma <- gregexpr(",", findAwayScore)
+  findAwayScore <- substr(findAwayScore, 1, findComma[[1]] - 2)
+}
+y <- substr(findAwayScore, 3, 3)
+if(!is.empty(y)){
+  findAwayScore <- substr(findAwayScore, 1, 2)
+}
+findAwayScore <- as.numeric(findAwayScore)
+shotLocations$AwayScore[i] <- findAwayScore
 
 
 
