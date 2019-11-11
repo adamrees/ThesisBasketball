@@ -67,6 +67,29 @@ url <- getURL("https://sports.yahoo.com/nba/los-angeles-clippers-phoenix-suns-20
 postJump <- gregexpr("JUMPBALL", url)
 
 starterStuff <- substr(url, 1, postJump)
+players <- gregexpr("on_court", starterStuff)
+playerIDs <- c()
+starters <- c()
+
+for(i in 1:length(players[[1]])){
+  
+playerIDs[i] <- substr(starterStuff, players[[1]][i] - 7, players[[1]][i] -4)
+
+checkStarter <- substr(starterStuff, players[[1]][i] + 23, players[[1]][i] + 23)
+
+if(grepl(checkStarter, "0")){
+  starters[i] <- FALSE
+  } else{
+  starters[i] <- TRUE
+}
+}
+
+playerIDs
+starters
+startingLineups <- data.frame(playerIDs, starters)
+startingLineups
+justStarters <- startingLineups %>% filter(starters == TRUE)
+justStarters
 
 #We only want the data after the jump
 data <- substr(url, postJump[[1]], nchar(url))
@@ -135,6 +158,7 @@ numShots
 #go through every single shot taken
 for(i in 1:numShots){
   
+
 fullString <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 450)
 
 timeChr <- gregexpr("clock", fullString)
@@ -154,6 +178,8 @@ findPeriod <- substr(fullString, periodChr[[1]]+9, periodChr[[1]] + 9)
 
 shotLocations$Period[i] <- findPeriod
 
+
+# Find the score for the home team
 homescoreChr <- gregexpr("home_score", fullString)
 findHomeScore <- substr(fullString, homescoreChr[[1]]+13, homescoreChr[[1]] + 15)
 if(grepl(",", findHomeScore)){
@@ -167,12 +193,22 @@ if(is.na(as.numeric(x)) & !is.empty(x)){
 
 shotLocations$HomeScore[i] <- findHomeScore
 
+awayScoreChr <- gregexpr("away_score", fullString)
+findAwayScore <- substr(fullString, awayScoreChr[[1]] + 13, awayScoreChr[[1]] + 18)
 
-#baseline offset could be 0 to 4 characters - we want to just grab the number
-if(grepl(",", baseString)){
-  findComma <- gregexpr(",", baseString)
-  baseString <- substr(baseString, 1, findComma[[1]] - 1)
+
+if(grepl(",", findAwayScore)){
+  findComma <- gregexpr(",", findAwayScore)
+  findAwayScore <- substr(findAwayScore, 1, findComma[[1]] - 2)
 }
+
+#x <- substr(findAwayScore, 3, 3)
+#if(is.na(as.numeric(x)) & !is.empty(x)){
+#  findAwayScore <- substr(findAwayScore, 1, 2)
+#}
+
+shotLocations$AwayScore[i] <- findAwayScore
+
 
     
 #Find the baseline offset by getting a large string after the shot, finding where it says baseline offset and taking the number after it
@@ -272,6 +308,20 @@ shotsNoFT
 
 
 
+```{r}
+fullString <- substr(data, shotLocations$shotChar[10], shotLocations$shotChar[10] + 450)
+awayScoreChr <- gregexpr("away_score", fullString)
+findAwayScore <- substr(fullString, awayScoreChr[[1]] + 13, awayScoreChr[[1]] + 18)
+
+findAwayScore
+if(grepl(",", findAwayScore)){
+  findComma <- gregexpr(",", findAwayScore)
+  findAwayScore <- substr(findAwayScore, 1, findComma[[1]] - 2)
+}
+findAwayScore
+
+
+```
 
 
 
