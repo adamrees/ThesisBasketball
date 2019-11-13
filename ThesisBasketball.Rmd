@@ -150,7 +150,7 @@ shotLocations$A4 <- justStarters$playerIDs[[9]]
 shotLocations$A5 <- justStarters$playerIDs[[10]]
 
 
-
+Currently: getting NAs on the enter player and leave player
 ```{r}
 
 #number of shots taken in the game
@@ -160,7 +160,7 @@ numShots <- nrow(shotLocations)
 
 
 subsCounter <- 1
-
+l <- 0
 
 for(i in 1:numShots){
 
@@ -182,42 +182,51 @@ for(i in 1:numShots){
   
   if(!is.na(subs[[1]][subsCounter]) && as.numeric(subs[[1]][subsCounter] < as.numeric(shotLocations$shotChar[i]))){
   
+
   while(!is.na(subs[[1]][subsCounter + 1]) &&
     as.numeric(subs[[1]][subsCounter] < as.numeric(shotLocations$shotChar[i]))){
+    
+      l <- l + 1
+
 
     #find the players that are getting subbed in and subbed out
     enterPlayer <- as.numeric(substr(data, subs[[1]][subsCounter] + 51, subs[[1]][subsCounter] + 54))
-    leavePlayer <- as.numeric(substr(data, subs[[1]][3] + 73, subs[[1]][3] + 76))
+    leavePlayer <- as.numeric(substr(data, subs[[1]][subsCounter] + 73, subs[[1]][subsCounter] + 76))
     
-    if(shotLocations$H1[i] == leavePlayer){
+    
+
+    if(shotLocations$H1[i-1] == leavePlayer){
       shotLocations$H1[i] <- enterPlayer
     }
-    if(shotLocations$H2[i] == leavePlayer){
+    if(shotLocations$H2[i-1] == leavePlayer){
       shotLocations$H2[i] <- enterPlayer
     }
-    if(shotLocations$H3[i] == leavePlayer){
+    if(shotLocations$H3[i-1] == leavePlayer){
       shotLocations$H3[i] <- enterPlayer
     }
-    if(shotLocations$H4[i] == leavePlayer){
+    if(shotLocations$H4[i-1] == leavePlayer){
       shotLocations$H4[i] <- enterPlayer
     }
-    if(shotLocations$H5[i] == leavePlayer){
+    if(shotLocations$H5[i-1] == leavePlayer){
       shotLocations$H5[i] <- enterPlayer
     }
-    if(shotLocations$A1[i] == leavePlayer){
+    if(shotLocations$A1[i-1] == leavePlayer){
       shotLocations$A1[i] <- enterPlayer
     }
-    if(shotLocations$A2[i] == leavePlayer){
+    if(shotLocations$A2[i-1] == leavePlayer){
       shotLocations$A2[i] <- enterPlayer
     }
-    if(shotLocations$A3[i] == leavePlayer){
+    if(shotLocations$A3[i-1] == leavePlayer){
       shotLocations$A3[i] == enterPlayer
     }
-    if(shotLocations$A4[i] == leavePlayer){
+    if(shotLocations$A4[i-1] == leavePlayer){
       shotLocations$A4[i] == enterPlayer
     }
-    if(shotLocations$A4[i] == leavePlayer){
+    if(shotLocations$A4[i-1] == leavePlayer){
       shotLocations$A4[i] == enterPlayer
+    }
+    if(shotLocations$A5[i-1] == leavePlayer){
+      shotLocations$A5[i] == enterPlayer
     }
     
     subsCounter <- subsCounter + 1
@@ -390,6 +399,8 @@ shotsNoFT
 
 
 
+shotLocations
+
 ```
 
 
@@ -433,11 +444,18 @@ k[i] <- as.numeric(shotLocations$shotChar[i])
 
 
 }
+enterPlayer <- c()
+leavePlayer <- c()
+subsCounter <- 1
 
-c
- 
-k
-subsCounter
+for(j in 1:53){
+enterPlayer[i] <- as.numeric(substr(data, subs[[1]][subsCounter] + 51, subs[[1]][subsCounter] + 54))
+    leavePlayer[i] <- as.numeric(substr(data, subs[[1]][subsCounter] + 73, subs[[1]][subsCounter] + 76))
+    subsCounter <- subsCounter + 1
+}
+
+enterPlayer
+leavePlayer
 
 ```
 
