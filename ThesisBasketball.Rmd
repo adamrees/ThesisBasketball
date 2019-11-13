@@ -138,17 +138,6 @@ nrow(shotLocations)
 ```
 
 
-
-
-```{r}
-
-#number of shots taken in the game
-numShots <- nrow(shotLocations)
-numShots
-
-
-
-
 shotLocations$H1 <- justStarters$playerIDs[[1]]
 shotLocations$H2 <- justStarters$playerIDs[[2]]
 shotLocations$H3 <- justStarters$playerIDs[[3]]
@@ -160,28 +149,96 @@ shotLocations$A3 <- justStarters$playerIDs[[8]]
 shotLocations$A4 <- justStarters$playerIDs[[9]]
 shotLocations$A5 <- justStarters$playerIDs[[10]]
 
-shotLocations
+
+
+```{r}
+
+#number of shots taken in the game
+numShots <- nrow(shotLocations)
+
+
 
 
 subsCounter <- 1
-subs[[subsCounter]]
-subs
-#go through every single shot taken
-l <- 0
+
 
 for(i in 1:numShots){
 
+  
 
-
+  if(i == 1){
+    shotLocations$H1[i] <- justStarters$playerIDs[[1]]
+    shotLocations$H2[i]<- justStarters$playerIDs[[2]]
+    shotLocations$H3[i] <- justStarters$playerIDs[[3]]
+    shotLocations$H4[i] <- justStarters$playerIDs[[4]]
+    shotLocations$H5[i] <- justStarters$playerIDs[[5]]
+    shotLocations$A1[i] <- justStarters$playerIDs[[6]]
+    shotLocations$A2[i] <- justStarters$playerIDs[[7]]
+    shotLocations$A3[i] <- justStarters$playerIDs[[8]]
+    shotLocations$A4[i] <- justStarters$playerIDs[[9]]
+    shotLocations$A5[i] <- justStarters$playerIDs[[10]]
+  }else{
+    #not the first shot
+  
   if(!is.na(subs[[1]][subsCounter]) && as.numeric(subs[[1]][subsCounter] < as.numeric(shotLocations$shotChar[i]))){
   
   while(!is.na(subs[[1]][subsCounter + 1]) &&
     as.numeric(subs[[1]][subsCounter] < as.numeric(shotLocations$shotChar[i]))){
-  l <- l + 1
-  subsCounter <- subsCounter + 1
 
+    #find the players that are getting subbed in and subbed out
+    enterPlayer <- as.numeric(substr(data, subs[[1]][subsCounter] + 51, subs[[1]][subsCounter] + 54))
+    leavePlayer <- as.numeric(substr(data, subs[[1]][3] + 73, subs[[1]][3] + 76))
+    
+    if(shotLocations$H1[i] == leavePlayer){
+      shotLocations$H1[i] <- enterPlayer
+    }
+    if(shotLocations$H2[i] == leavePlayer){
+      shotLocations$H2[i] <- enterPlayer
+    }
+    if(shotLocations$H3[i] == leavePlayer){
+      shotLocations$H3[i] <- enterPlayer
+    }
+    if(shotLocations$H4[i] == leavePlayer){
+      shotLocations$H4[i] <- enterPlayer
+    }
+    if(shotLocations$H5[i] == leavePlayer){
+      shotLocations$H5[i] <- enterPlayer
+    }
+    if(shotLocations$A1[i] == leavePlayer){
+      shotLocations$A1[i] <- enterPlayer
+    }
+    if(shotLocations$A2[i] == leavePlayer){
+      shotLocations$A2[i] <- enterPlayer
+    }
+    if(shotLocations$A3[i] == leavePlayer){
+      shotLocations$A3[i] == enterPlayer
+    }
+    if(shotLocations$A4[i] == leavePlayer){
+      shotLocations$A4[i] == enterPlayer
+    }
+    if(shotLocations$A4[i] == leavePlayer){
+      shotLocations$A4[i] == enterPlayer
+    }
+    
+    subsCounter <- subsCounter + 1
+    }
+
+  }else{
+    #There has not been a sub since the last shot
+    shotLocations$H1[i] <- shotLocations$H1[i-1]
+    shotLocations$H2[i] <- shotLocations$H2[i-1]
+    shotLocations$H3[i] <- shotLocations$H3[i-1]
+    shotLocations$H4[i] <- shotLocations$H4[i-1]
+    shotLocations$H5[i] <- shotLocations$H5[i-1]
+    shotLocations$A1[i] <- shotLocations$A1[i-1]
+    shotLocations$A2[i] <- shotLocations$A2[i-1]
+    shotLocations$A3[i] <- shotLocations$A3[i-1]
+    shotLocations$A4[i] <- shotLocations$A4[i-1]
+    shotLocations$A5[i] <- shotLocations$A4[i-1]
   }
-
+   
+    
+     
   }
   
   
@@ -330,7 +387,6 @@ points(misses, pch = 4)
 
 
 shotsNoFT
-
 
 
 
