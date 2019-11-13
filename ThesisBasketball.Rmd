@@ -89,7 +89,6 @@ starters
 startingLineups <- data.frame(playerIDs, starters)
 startingLineups
 justStarters <- startingLineups %>% filter(starters == TRUE)
-justStarters
 
 #We only want the data after the jump
 data <- substr(url, postJump[[1]], nchar(url))
@@ -107,15 +106,9 @@ length(shots[[1]])
 newShots <- shots[[1]]
 length(newShots)
 
-#Get rid of the free throws
-#for (i in 1:249) {
-  #checkBaselinePercentage <- substr(data, shots[[1]][i], shots[[1]][i] + 500)
-  #checkSidelinePercentage <- substr(data, shots[[1]][i], shots[[1]][i] + 250)
-  #"0.1573", checkSidelinePercentage) && 
-  #if(!grepl("free throw", checkSidelinePercentage)){
-  # newShots <- c(newShots, shots[[1]][i])
- # }
-#}
+
+subs <- gregexpr("SUB", data)
+
 
 #get rid of the NAs
 newShots <- newShots[!is.na(newShots)]
@@ -155,10 +148,43 @@ numShots
 
 
 
-#go through every single shot taken
-for(i in 1:numShots){
-  
 
+shotLocations$H1 <- justStarters$playerIDs[[1]]
+shotLocations$H2 <- justStarters$playerIDs[[2]]
+shotLocations$H3 <- justStarters$playerIDs[[3]]
+shotLocations$H4 <- justStarters$playerIDs[[4]]
+shotLocations$H5 <- justStarters$playerIDs[[5]]
+shotLocations$A1 <- justStarters$playerIDs[[6]]
+shotLocations$A2 <- justStarters$playerIDs[[7]]
+shotLocations$A3 <- justStarters$playerIDs[[8]]
+shotLocations$A4 <- justStarters$playerIDs[[9]]
+shotLocations$A5 <- justStarters$playerIDs[[10]]
+
+shotLocations
+
+
+subsCounter <- 1
+subs[[subsCounter]]
+subs
+#go through every single shot taken
+l <- 0
+
+for(i in 1:numShots){
+
+
+
+  if(!is.na(subs[[1]][subsCounter]) && as.numeric(subs[[1]][subsCounter] < as.numeric(shotLocations$shotChar[i]))){
+  
+  while(!is.na(subs[[1]][subsCounter + 1]) &&
+    as.numeric(subs[[1]][subsCounter] < as.numeric(shotLocations$shotChar[i]))){
+  l <- l + 1
+  subsCounter <- subsCounter + 1
+
+  }
+
+  }
+  
+  
 fullString <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 450)
 
 timeChr <- gregexpr("clock", fullString)
@@ -277,6 +303,7 @@ shotLocations$Y_LOC[i] <- shotLocations$sidelineOffset[i] * 850
 
 #get the home and away teams
 teams <- unique(shotLocations$Team)
+#set the opposing team
 shotLocations$OpposingTeam <- ifelse(shotLocations$Team == teams[1], teams[2], teams[1])
 
 
@@ -289,7 +316,6 @@ shotLocations$X_LOC <- as.double(shotLocations$X_LOC)
 #Filter out Free Throws
 shotsNoFT <- shotLocations %>% filter(!(shotLocations$sidelineOffset == 0.1573 & shotLocations$baselineOffset == 0.00))
 
-shotsNoFT
 
 #coordinates(shotsNoFT) <- ~X_LOC + Y_LOC
 makes <- shotsNoFT %>% filter(shotsNoFT$MakeMiss == 1)
@@ -304,6 +330,10 @@ points(misses, pch = 4)
 
 
 shotsNoFT
+
+
+
+
 ```
 
 
@@ -323,6 +353,37 @@ findAwayScore
 
 ```
 
+```{r}
+
+subsCounter <- 1
+l <- c()
+c <- c()
+k <- c()
+subs[[1]]
+shotLocations$shotChar
+subsLength <- length(subs[[1]])
+
+for(i in 1:numShots){
+
+c[i] <- as.numeric(subs[[1]][subsCounter])
+k[i] <- as.numeric(shotLocations$shotChar[i])
+
+  if(!is.na(c[i]) && c[i] < k[i]){
+  subsCounter <- subsCounter + 1
+  
+  }
+  
+
+
+
+}
+
+c
+ 
+k
+subsCounter
+
+```
 
 
 
