@@ -26,37 +26,8 @@ library(rapportools)
 
 ```
 
-Old Code
 
-year <- "2019"
-month <- "04"
-day <- "13"
-unknown <- "0"
-homeTeam <- "PHI"
-
-check <- paste0("https://www.basketball-reference.com/boxscores/pbp/", year, month, day, "0", homeTeam, ".html")
-check_url <- getURL(check)
-check_table <- readHTMLTable(check_url, which = 1)
-
-check_table
-
-
-Old Code:
-
-lebron <- "https://www.basketball-reference.com/players/j/jamesle01.html"
-lebron_webpage <- read_html(lebron)
-lebron_table <- html_table(lebron_webpage, fill = TRUE)
-lebron_pergame <- data.frame(lebron_table)
-
-lebron_url <- paste0(lebron)
-lebron_url <- getURL(lebron_url)
-lebron_table <- readHTMLTable(lebron_url, which = 1)
-
-lebron_table
-
-
-
-
+Getting the original data up. Pull in what URL you want and work from there
 ```{r}
 #url <- getURL("https://sports.yahoo.com/nba/los-angeles-lakers-golden-state-warriors-2019100509/?section=gamestream")
 
@@ -66,17 +37,20 @@ url <- getURL("https://sports.yahoo.com/nba/los-angeles-clippers-phoenix-suns-20
 #Character where JUMPBALL happened
 postJump <- gregexpr("JUMPBALL", url)
 
+#the string before the JUMPBALL - needed to get the starters
 starterStuff <- substr(url, 1, postJump)
 players <- gregexpr("on_court", starterStuff)
 playerIDs <- c()
 starters <- c()
 
 for(i in 1:length(players[[1]])){
-  
+
+#get all of the players IDS
 playerIDs[i] <- substr(starterStuff, players[[1]][i] - 7, players[[1]][i] -4)
 
 checkStarter <- substr(starterStuff, players[[1]][i] + 23, players[[1]][i] + 23)
 
+#Identify if they are a starter or not
 if(grepl(checkStarter, "0")){
   starters[i] <- FALSE
   } else{
@@ -84,13 +58,16 @@ if(grepl(checkStarter, "0")){
 }
 }
 
-playerIDs
-starters
-startingLineups <- data.frame(playerIDs, starters)
-startingLineups
-justStarters <- startingLineups %>% filter(starters == TRUE)
 
-#We only want the data after the jump
+startingLineups <- data.frame(playerIDs, starters)
+justStarters <- startingLineups %>% filter(starters == TRUE)
+startingIDs <- c()
+for(i in 1:nrow(justStarters)){
+  startingIDs[i] <- toString(justStarters$playerIDs[i])
+}
+startingIDs
+
+#We only want the data after the jump for the gameStream
 data <- substr(url, postJump[[1]], nchar(url))
 ```
 
@@ -100,13 +77,8 @@ data <- substr(url, postJump[[1]], nchar(url))
 #Get all of the characters where shots were taken
 shots <- gregexpr("SHOT", data)
 
-length(shots[[1]])
-
 
 newShots <- shots[[1]]
-length(newShots)
-
-
 subs <- gregexpr("SUB", data)
 
 
@@ -129,12 +101,10 @@ for(i in 1:length(shotChar)){
 }
 
 #data frame with every single shot and who shot it
-shotAndShooter <- data_frame(shotChar, shooterID)
-table(shooterID)
+shotAndShooter <- tibble(shotChar, shooterID)
 
 #you can add a filter here
 shotLocations <- shotAndShooter
-nrow(shotLocations)
 ```
 
 
@@ -150,51 +120,63 @@ shotLocations$A4 <- justStarters$playerIDs[[9]]
 shotLocations$A5 <- justStarters$playerIDs[[10]]
 
 
-Currently: getting NAs on the enter player and leave player
+Currently: getting NAs on the enter player and leave player. need to get the leave and enter player better like grab the whole string and work from there
 ```{r}
+#We want to initialize the starters
+shotLocations$H1<- ""
+    shotLocations$H2<- ""
+    shotLocations$H3<- ""
+    shotLocations$H4<- ""
+    shotLocations$H5<- ""
+    shotLocations$A1<- ""
+    shotLocations$A2<- ""
+    shotLocations$A3<- ""
+    shotLocations$A4<- ""
+    shotLocations$A5<- ""
+    
+    
 
 #number of shots taken in the game
 numShots <- nrow(shotLocations)
 
 
-
-
 subsCounter <- 1
-l <- 0
+l <- 1
 
 for(i in 1:numShots){
 
-  
-
   if(i == 1){
-    shotLocations$H1[i] <- justStarters$playerIDs[[1]]
-    shotLocations$H2[i]<- justStarters$playerIDs[[2]]
-    shotLocations$H3[i] <- justStarters$playerIDs[[3]]
-    shotLocations$H4[i] <- justStarters$playerIDs[[4]]
-    shotLocations$H5[i] <- justStarters$playerIDs[[5]]
-    shotLocations$A1[i] <- justStarters$playerIDs[[6]]
-    shotLocations$A2[i] <- justStarters$playerIDs[[7]]
-    shotLocations$A3[i] <- justStarters$playerIDs[[8]]
-    shotLocations$A4[i] <- justStarters$playerIDs[[9]]
-    shotLocations$A5[i] <- justStarters$playerIDs[[10]]
-  }else{
-    #not the first shot
+    shotLocations$H1[1]<- startingIDs[1]
+    shotLocations$H2[1]<- startingIDs[2]
+    shotLocations$H3[1]<- startingIDs[3]
+    shotLocations$H4[1]<- startingIDs[4]
+    shotLocations$H5[1]<- startingIDs[5]
+    shotLocations$A1[1]<- startingIDs[6]
+    shotLocations$A2[1]<- startingIDs[7]
+    shotLocations$A3[1]<- startingIDs[8]
+    shotLocations$A4[1]<- startingIDs[9]
+    shotLocations$A5[1]<- startingIDs[10]
+  }
+  else{
+    
+#Do we need to make a sub?
+    if(!is.na(subs[[1]][subsCounter]) && as.numeric(subs[[1]][subsCounter] < as.numeric(shotLocations$shotChar[i]))){
   
-  if(!is.na(subs[[1]][subsCounter]) && as.numeric(subs[[1]][subsCounter] < as.numeric(shotLocations$shotChar[i]))){
-  
-
+      
   while(!is.na(subs[[1]][subsCounter + 1]) &&
     as.numeric(subs[[1]][subsCounter] < as.numeric(shotLocations$shotChar[i]))){
     
       l <- l + 1
 
-
     #find the players that are getting subbed in and subbed out
-    enterPlayer <- as.numeric(substr(data, subs[[1]][subsCounter] + 51, subs[[1]][subsCounter] + 54))
-    leavePlayer <- as.numeric(substr(data, subs[[1]][subsCounter] + 73, subs[[1]][subsCounter] + 76))
-    
-    
+findPlayer <- substr(data, subs[[1]][l], subs[[1]][l] + 150)
+findPlayer
+playerEnter <- gregexpr("enter_player", findPlayer)
+playerLeave <- gregexpr("leave_player", findPlayer)
 
+enterPlayer <- substr(findPlayer, playerEnter[[1]] + 15, playerEnter[[1]] + 18)
+leavePlayer <- substr(findPlayer, playerLeave[[1]] + 15, playerLeave[[1]] + 18)
+    
     if(shotLocations$H1[i-1] == leavePlayer){
       shotLocations$H1[i] <- enterPlayer
     }
@@ -230,9 +212,10 @@ for(i in 1:numShots){
     }
     
     subsCounter <- subsCounter + 1
+}
     }
-
-  }else{
+  
+  else{
     #There has not been a sub since the last shot
     shotLocations$H1[i] <- shotLocations$H1[i-1]
     shotLocations$H2[i] <- shotLocations$H2[i-1]
@@ -245,10 +228,12 @@ for(i in 1:numShots){
     shotLocations$A4[i] <- shotLocations$A4[i-1]
     shotLocations$A5[i] <- shotLocations$A4[i-1]
   }
-   
-    
-     
   }
+  
+   
+
+     
+  
   
   
 fullString <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 450)
@@ -313,7 +298,6 @@ if(grepl(",", baseString)){
   findComma <- gregexpr(",", baseString)
   baseString <- substr(baseString, 1, findComma[[1]] - 1)
 }
-
 
 #Same code but now for sideline offset
 findSideline <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 300)
@@ -422,45 +406,117 @@ findAwayScore
 
 ```{r}
 
-subsCounter <- 1
-l <- c()
-c <- c()
-k <- c()
-subs[[1]]
-shotLocations$shotChar
-subsLength <- length(subs[[1]])
-
 for(i in 1:numShots){
 
-c[i] <- as.numeric(subs[[1]][subsCounter])
-k[i] <- as.numeric(shotLocations$shotChar[i])
-
-  if(!is.na(c[i]) && c[i] < k[i]){
-  subsCounter <- subsCounter + 1
+#initialize the starters - there is a chance this will run into a problem if someone subs out before the first shot.
+  if(i == 1){
+    shotLocations$H1[i] <- justStarters$playerIDs[[1]]
+    shotLocations$H2[i] <- justStarters$playerIDs[[2]]
+    shotLocations$H3[i] <- justStarters$playerIDs[[3]]
+    shotLocations$H4[i] <- justStarters$playerIDs[[4]]
+    shotLocations$H5[i] <- justStarters$playerIDs[[5]]
+    shotLocations$A1[i] <- justStarters$playerIDs[[6]]
+    shotLocations$A2[i] <- justStarters$playerIDs[[7]]
+    shotLocations$A3[i] <- justStarters$playerIDs[[8]]
+    shotLocations$A4[i] <- justStarters$playerIDs[[9]]
+    shotLocations$A5[i] <- justStarters$playerIDs[[10]]
+  }else{
+    #not the first shot
   
-  }
+    if(!is.na(subs[[1]][subsCounter]) && as.numeric(subs[[1]][subsCounter] < as.numeric(shotLocations$shotChar[i]))){
   
 
+  while(!is.na(subs[[1]][subsCounter + 1]) &&
+    as.numeric(subs[[1]][subsCounter] < as.numeric(shotLocations$shotChar[i]))){
+    
+      l <- l + 1
 
 
-}
-enterPlayer <- c()
-leavePlayer <- c()
-subsCounter <- 1
+    #find the players that are getting subbed in and subbed out
+findPlayer <- substr(data, subs[[1]][8], subs[[1]][8] + 150)
+findPlayer
+playerEnter <- gregexpr("enter_player", findPlayer)
+playerLeave <- gregexpr("leave_player", findPlayer)
 
-for(j in 1:53){
-enterPlayer[i] <- as.numeric(substr(data, subs[[1]][subsCounter] + 51, subs[[1]][subsCounter] + 54))
-    leavePlayer[i] <- as.numeric(substr(data, subs[[1]][subsCounter] + 73, subs[[1]][subsCounter] + 76))
+enterPlayer <- substr(findPlayer, playerEnter[[1]] + 15, playerEnter[[1]] + 18)
+leavePlayer <- substr(findPlayer, playerLeave[[1]] + 15, playerLeave[[1]] + 18)
+    
+    
+
+    if(shotLocations$H1[i-1] == leavePlayer){
+      shotLocations$H1[i] <- enterPlayer
+    }
+    if(shotLocations$H2[i-1] == leavePlayer){
+      shotLocations$H2[i] <- enterPlayer
+    }
+    if(shotLocations$H3[i-1] == leavePlayer){
+      shotLocations$H3[i] <- enterPlayer
+    }
+    if(shotLocations$H4[i-1] == leavePlayer){
+      shotLocations$H4[i] <- enterPlayer
+    }
+    if(shotLocations$H5[i-1] == leavePlayer){
+      shotLocations$H5[i] <- enterPlayer
+    }
+    if(shotLocations$A1[i-1] == leavePlayer){
+      shotLocations$A1[i] <- enterPlayer
+    }
+    if(shotLocations$A2[i-1] == leavePlayer){
+      shotLocations$A2[i] <- enterPlayer
+    }
+    if(shotLocations$A3[i-1] == leavePlayer){
+      shotLocations$A3[i] == enterPlayer
+    }
+    if(shotLocations$A4[i-1] == leavePlayer){
+      shotLocations$A4[i] == enterPlayer
+    }
+    if(shotLocations$A4[i-1] == leavePlayer){
+      shotLocations$A4[i] == enterPlayer
+    }
+    if(shotLocations$A5[i-1] == leavePlayer){
+      shotLocations$A5[i] == enterPlayer
+    }
+    
     subsCounter <- subsCounter + 1
+    }
+
+  }else{
+    #There has not been a sub since the last shot
+    shotLocations$H1[i] <- shotLocations$H1[i-1]
+    shotLocations$H2[i] <- shotLocations$H2[i-1]
+    shotLocations$H3[i] <- shotLocations$H3[i-1]
+    shotLocations$H4[i] <- shotLocations$H4[i-1]
+    shotLocations$H5[i] <- shotLocations$H5[i-1]
+    shotLocations$A1[i] <- shotLocations$A1[i-1]
+    shotLocations$A2[i] <- shotLocations$A2[i-1]
+    shotLocations$A3[i] <- shotLocations$A3[i-1]
+    shotLocations$A4[i] <- shotLocations$A4[i-1]
+    shotLocations$A5[i] <- shotLocations$A4[i-1]
+  }
+   
+    
+     
+  }
 }
 
-enterPlayer
-leavePlayer
 
+    
+    
+    
 ```
 
 
-
+shotLocations$H1<- ""
+    shotLocations$H2 <- 0
+    shotLocations$H3<- 0
+    shotLocations$H4<- 0
+    shotLocations$H5<- 0
+    shotLocations$A1<- 0
+    shotLocations$A2<- 0
+    shotLocations$A3<- 0
+    shotLocations$A4<- 0
+    shotLocations$A5<- 0
+    shotLocations
 
 EXTRA CODE:
 findHome <- gregexpr("home_team_id", data)
