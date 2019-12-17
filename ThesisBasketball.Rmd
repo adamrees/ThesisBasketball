@@ -120,56 +120,32 @@ shotLocations$A4 <- justStarters$playerIDs[[9]]
 shotLocations$A5 <- justStarters$playerIDs[[10]]
 
 
-Currently: getting NAs on the enter player and leave player. need to get the leave and enter player better like grab the whole string and work from there
+Build a dataset for all of the subs
 ```{r}
-#We want to initialize the starters
-shotLocations$H1<- ""
-    shotLocations$H2<- ""
-    shotLocations$H3<- ""
-    shotLocations$H4<- ""
-    shotLocations$H5<- ""
-    shotLocations$A1<- ""
-    shotLocations$A2<- ""
-    shotLocations$A3<- ""
-    shotLocations$A4<- ""
-    shotLocations$A5<- ""
-    
-    
+subChars <- append(0,subs[[1]])
+allSubs <- data.frame(subChars)
+numSubs <- length(allSubs[[1]])
 
-#number of shots taken in the game
-numShots <- nrow(shotLocations)
-
-
-subsCounter <- 1
-l <- 1
-
-for(i in 1:numShots){
+for(i in 1:numSubs){
 
   if(i == 1){
-    shotLocations$H1[1]<- startingIDs[1]
-    shotLocations$H2[1]<- startingIDs[2]
-    shotLocations$H3[1]<- startingIDs[3]
-    shotLocations$H4[1]<- startingIDs[4]
-    shotLocations$H5[1]<- startingIDs[5]
-    shotLocations$A1[1]<- startingIDs[6]
-    shotLocations$A2[1]<- startingIDs[7]
-    shotLocations$A3[1]<- startingIDs[8]
-    shotLocations$A4[1]<- startingIDs[9]
-    shotLocations$A5[1]<- startingIDs[10]
+    allSubs$H1[1]<- startingIDs[1]
+    allSubs$H2[1]<- startingIDs[2]
+    allSubs$H3[1]<- startingIDs[3]
+    allSubs$H4[1]<- startingIDs[4]
+    allSubs$H5[1]<- startingIDs[5]
+    allSubs$A1[1]<- startingIDs[6]
+    allSubs$A2[1]<- startingIDs[7]
+    allSubs$A3[1]<- startingIDs[8]
+    allSubs$A4[1]<- startingIDs[9]
+    allSubs$A5[1]<- startingIDs[10]
   }
   else{
-    
-#Do we need to make a sub?
-    if(!is.na(subs[[1]][subsCounter]) && as.numeric(subs[[1]][subsCounter] < as.numeric(shotLocations$shotChar[i]))){
   
-      
-  while(!is.na(subs[[1]][subsCounter + 1]) &&
-    as.numeric(subs[[1]][subsCounter] < as.numeric(shotLocations$shotChar[i]))){
     
-      l <- l + 1
-
+    
     #find the players that are getting subbed in and subbed out
-findPlayer <- substr(data, subs[[1]][l], subs[[1]][l] + 150)
+findPlayer <- substr(data, allSubs$subChars[i], allSubs$subChars[i] + 150)
 findPlayer
 playerEnter <- gregexpr("enter_player", findPlayer)
 playerLeave <- gregexpr("leave_player", findPlayer)
@@ -177,65 +153,78 @@ playerLeave <- gregexpr("leave_player", findPlayer)
 enterPlayer <- substr(findPlayer, playerEnter[[1]] + 15, playerEnter[[1]] + 18)
 leavePlayer <- substr(findPlayer, playerLeave[[1]] + 15, playerLeave[[1]] + 18)
     
-    if(shotLocations$H1[i-1] == leavePlayer){
-      shotLocations$H1[i] <- enterPlayer
+    if(allSubs$H1[i-1] == leavePlayer){
+      allSubs$H1[i] <- enterPlayer
+    }else{
+      allSubs$H1[i] <- allSubs$H1[i-1]
     }
-    if(shotLocations$H2[i-1] == leavePlayer){
-      shotLocations$H2[i] <- enterPlayer
+    if(allSubs$H2[i-1] == leavePlayer){
+      allSubs$H2[i] <- enterPlayer
+    }else{
+      allSubs$H2[i] <- allSubs$H2[i-1]
     }
-    if(shotLocations$H3[i-1] == leavePlayer){
-      shotLocations$H3[i] <- enterPlayer
+    if(allSubs$H3[i-1] == leavePlayer){
+      allSubs$H3[i] <- enterPlayer
+    }else{
+      allSubs$H3[i] <- allSubs$H3[i-1]
     }
-    if(shotLocations$H4[i-1] == leavePlayer){
-      shotLocations$H4[i] <- enterPlayer
+    if(allSubs$H4[i-1] == leavePlayer){
+      allSubs$H4[i] <- enterPlayer
+    }else{
+      allSubs$H4[i] <- allSubs$H4[i-1]
     }
-    if(shotLocations$H5[i-1] == leavePlayer){
-      shotLocations$H5[i] <- enterPlayer
+    if(allSubs$H5[i-1] == leavePlayer){
+      allSubs$H5[i] <- enterPlayer
+    }else{
+      allSubs$H5[i] <- allSubs$H5[i-1]
     }
-    if(shotLocations$A1[i-1] == leavePlayer){
-      shotLocations$A1[i] <- enterPlayer
+    if(allSubs$A1[i-1] == leavePlayer){
+      allSubs$A1[i] <- enterPlayer
+    }else{
+      allSubs$A1[i] <- allSubs$A1[i-1]
     }
-    if(shotLocations$A2[i-1] == leavePlayer){
-      shotLocations$A2[i] <- enterPlayer
+    if(allSubs$A2[i-1] == leavePlayer){
+      allSubs$A2[i] <- enterPlayer
+    }else{
+    allSubs$A2[i] <- allSubs$A2[i-1]
     }
-    if(shotLocations$A3[i-1] == leavePlayer){
-      shotLocations$A3[i] == enterPlayer
+    if(allSubs$A3[i-1] == leavePlayer){
+      allSubs$A3[i] <- enterPlayer
+    }else{
+      allSubs$A3[i] <- allSubs$A3[i-1]
     }
-    if(shotLocations$A4[i-1] == leavePlayer){
-      shotLocations$A4[i] == enterPlayer
+    if(allSubs$A4[i-1] == leavePlayer){
+      allSubs$A4[i] <- enterPlayer
+    }else{
+      allSubs$A4[i] <- allSubs$A4[i-1]
     }
-    if(shotLocations$A4[i-1] == leavePlayer){
-      shotLocations$A4[i] == enterPlayer
-    }
-    if(shotLocations$A5[i-1] == leavePlayer){
-      shotLocations$A5[i] == enterPlayer
+    if(allSubs$A5[i-1] == leavePlayer){
+      allSubs$A5[i] <- enterPlayer
+    }else{
+      allSubs$A5[i] <- allSubs$A5[i-1]
     }
     
-    subsCounter <- subsCounter + 1
 }
-    }
+    
   
-  else{
-    #There has not been a sub since the last shot
-    shotLocations$H1[i] <- shotLocations$H1[i-1]
-    shotLocations$H2[i] <- shotLocations$H2[i-1]
-    shotLocations$H3[i] <- shotLocations$H3[i-1]
-    shotLocations$H4[i] <- shotLocations$H4[i-1]
-    shotLocations$H5[i] <- shotLocations$H5[i-1]
-    shotLocations$A1[i] <- shotLocations$A1[i-1]
-    shotLocations$A2[i] <- shotLocations$A2[i-1]
-    shotLocations$A3[i] <- shotLocations$A3[i-1]
-    shotLocations$A4[i] <- shotLocations$A4[i-1]
-    shotLocations$A5[i] <- shotLocations$A4[i-1]
   }
-  }
-  
-   
+```
 
-     
-  
-  
-  
+
+
+
+Currently: getting NAs on the enter player and leave player. need to get the leave and enter player better like grab the whole string and work from there
+```{r}
+
+    
+
+#number of shots taken in the game
+numShots <- nrow(shotLocations)
+
+
+for(i in 1:numShots){
+
+
 fullString <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 450)
 
 timeChr <- gregexpr("clock", fullString)
@@ -382,9 +371,6 @@ points(misses, pch = 4)
 shotsNoFT
 
 
-
-shotLocations
-
 ```
 
 
@@ -406,103 +392,14 @@ findAwayScore
 
 ```{r}
 
-for(i in 1:numShots){
-
-#initialize the starters - there is a chance this will run into a problem if someone subs out before the first shot.
-  if(i == 1){
-    shotLocations$H1[i] <- justStarters$playerIDs[[1]]
-    shotLocations$H2[i] <- justStarters$playerIDs[[2]]
-    shotLocations$H3[i] <- justStarters$playerIDs[[3]]
-    shotLocations$H4[i] <- justStarters$playerIDs[[4]]
-    shotLocations$H5[i] <- justStarters$playerIDs[[5]]
-    shotLocations$A1[i] <- justStarters$playerIDs[[6]]
-    shotLocations$A2[i] <- justStarters$playerIDs[[7]]
-    shotLocations$A3[i] <- justStarters$playerIDs[[8]]
-    shotLocations$A4[i] <- justStarters$playerIDs[[9]]
-    shotLocations$A5[i] <- justStarters$playerIDs[[10]]
-  }else{
-    #not the first shot
-  
-    if(!is.na(subs[[1]][subsCounter]) && as.numeric(subs[[1]][subsCounter] < as.numeric(shotLocations$shotChar[i]))){
-  
-
-  while(!is.na(subs[[1]][subsCounter + 1]) &&
-    as.numeric(subs[[1]][subsCounter] < as.numeric(shotLocations$shotChar[i]))){
-    
-      l <- l + 1
 
 
-    #find the players that are getting subbed in and subbed out
-findPlayer <- substr(data, subs[[1]][8], subs[[1]][8] + 150)
-findPlayer
-playerEnter <- gregexpr("enter_player", findPlayer)
-playerLeave <- gregexpr("leave_player", findPlayer)
-
-enterPlayer <- substr(findPlayer, playerEnter[[1]] + 15, playerEnter[[1]] + 18)
-leavePlayer <- substr(findPlayer, playerLeave[[1]] + 15, playerLeave[[1]] + 18)
-    
-    
-
-    if(shotLocations$H1[i-1] == leavePlayer){
-      shotLocations$H1[i] <- enterPlayer
-    }
-    if(shotLocations$H2[i-1] == leavePlayer){
-      shotLocations$H2[i] <- enterPlayer
-    }
-    if(shotLocations$H3[i-1] == leavePlayer){
-      shotLocations$H3[i] <- enterPlayer
-    }
-    if(shotLocations$H4[i-1] == leavePlayer){
-      shotLocations$H4[i] <- enterPlayer
-    }
-    if(shotLocations$H5[i-1] == leavePlayer){
-      shotLocations$H5[i] <- enterPlayer
-    }
-    if(shotLocations$A1[i-1] == leavePlayer){
-      shotLocations$A1[i] <- enterPlayer
-    }
-    if(shotLocations$A2[i-1] == leavePlayer){
-      shotLocations$A2[i] <- enterPlayer
-    }
-    if(shotLocations$A3[i-1] == leavePlayer){
-      shotLocations$A3[i] == enterPlayer
-    }
-    if(shotLocations$A4[i-1] == leavePlayer){
-      shotLocations$A4[i] == enterPlayer
-    }
-    if(shotLocations$A4[i-1] == leavePlayer){
-      shotLocations$A4[i] == enterPlayer
-    }
-    if(shotLocations$A5[i-1] == leavePlayer){
-      shotLocations$A5[i] == enterPlayer
-    }
-    
-    subsCounter <- subsCounter + 1
-    }
-
-  }else{
-    #There has not been a sub since the last shot
-    shotLocations$H1[i] <- shotLocations$H1[i-1]
-    shotLocations$H2[i] <- shotLocations$H2[i-1]
-    shotLocations$H3[i] <- shotLocations$H3[i-1]
-    shotLocations$H4[i] <- shotLocations$H4[i-1]
-    shotLocations$H5[i] <- shotLocations$H5[i-1]
-    shotLocations$A1[i] <- shotLocations$A1[i-1]
-    shotLocations$A2[i] <- shotLocations$A2[i-1]
-    shotLocations$A3[i] <- shotLocations$A3[i-1]
-    shotLocations$A4[i] <- shotLocations$A4[i-1]
-    shotLocations$A5[i] <- shotLocations$A4[i-1]
-  }
-   
-    
-     
-  }
-}
 
 
-    
-    
-    
+
+
+
+
 ```
 
 
