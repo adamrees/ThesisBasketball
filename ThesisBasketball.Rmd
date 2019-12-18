@@ -32,13 +32,12 @@ Getting the original data up. Pull in what URL you want and work from there
 #url <- getURL("https://sports.yahoo.com/nba/los-angeles-lakers-golden-state-warriors-2019100509/?section=gamestream")
 
 #URL for the livestream
-url <- getURL("https://sports.yahoo.com/nba/los-angeles-clippers-phoenix-suns-2019102621/?section=gamestream")
+url <- getURL("https://sports.yahoo.com/nba/miami-heat-dallas-mavericks-2019121406/?section=gamestream")
 
 #Character where JUMPBALL happened
 postJump <- gregexpr("JUMPBALL", url)
-
 #the string before the JUMPBALL - needed to get the starters
-starterStuff <- substr(url, 1, postJump)
+starterStuff <- substr(url, 1, postJump[[1]][1])
 players <- gregexpr("on_court", starterStuff)
 playerIDs <- c()
 starters <- c()
@@ -239,8 +238,9 @@ if(substr(findTime, 1, 1) == ":"){
 
 shotLocations$Time[i] <- findTime
 
-periodChr <- gregexpr("period", fullString)
-findPeriod <- substr(fullString, periodChr[[1]]+9, periodChr[[1]] + 9)
+periodString <- substr(data, shotLocations$shotChar[i]-50, shotLocations$shotChar[i])
+periodChr <- gregexpr("period", periodString)
+findPeriod <- substr(periodString, periodChr[[1]]+9, periodChr[[1]] + 9)
 
 shotLocations$Period[i] <- findPeriod
 
@@ -259,19 +259,15 @@ if(is.na(as.numeric(x)) & !is.empty(x)){
 
 shotLocations$HomeScore[i] <- findHomeScore
 
-awayScoreChr <- gregexpr("away_score", fullString)
-findAwayScore <- substr(fullString, awayScoreChr[[1]] + 13, awayScoreChr[[1]] + 18)
+fStr <- substr(data, shotLocations$shotChar[i] - 25, shotLocations$shotChar[i])
 
+awayScoreChr <- gregexpr("away_score", fStr)
+findAwayScore <- substr(fStr, awayScoreChr[[1]] + 13, awayScoreChr[[1]] + 18)
 
 if(grepl(",", findAwayScore)){
   findComma <- gregexpr(",", findAwayScore)
   findAwayScore <- substr(findAwayScore, 1, findComma[[1]] - 2)
 }
-
-#x <- substr(findAwayScore, 3, 3)
-#if(is.na(as.numeric(x)) & !is.empty(x)){
-#  findAwayScore <- substr(findAwayScore, 1, 2)
-#}
 
 shotLocations$AwayScore[i] <- findAwayScore
 
@@ -312,9 +308,8 @@ findTeam <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 
 teamCharacter <- gregexpr("team", findTeam)
 team <- substr(findTeam, teamCharacter[[1]] + 7, teamCharacter[[1]] + 8)
 
-if(grepl(",", team)){
- findComma <- gregexpr(",", team)
- team <- substr(team, 1, findComma[[1]] - 1)
+if(is.na(as.numeric(team))){
+ team <- substr(team, 1, 1)
 }
 
 shotLocations$Team[i] <- team
@@ -367,99 +362,50 @@ coordinates(misses) <- ~X_LOC + Y_LOC
 plot(makes, pch = 1)
 points(misses, pch = 4)
 
+    shotsNoFT$H1<- ""
+    shotsNoFT$H2 <- ""
+    shotsNoFT$H3<- ""
+    shotsNoFT$H4<- ""
+    shotsNoFT$H5<- ""
+    shotsNoFT$A1<- ""
+    shotsNoFT$A2<- ""
+    shotsNoFT$A3<- ""
+    shotsNoFT$A4<- ""
+    shotsNoFT$A5<- ""
 
-shotsNoFT
+ currentLineUp <- 1
+ maxSub <- length(allSubs[[1]])
+ maxShot <- length(shotsNoFT[[1]])
+ 
+for(i in 1:maxShot){
+  #first, find what index of the subs players you want to use
+  while(currentLineUp < maxSub & shotsNoFT$shotChar[i] > allSubs$subChars[currentLineUp + 1]){
+    currentLineUp <- currentLineUp + 1
+  }
+  
+  
+  #update shotsNoFT to that index
+    shotsNoFT$H1[i]<- allSubs$H1[currentLineUp]
+    shotsNoFT$H2[i]<- allSubs$H2[currentLineUp]
+    shotsNoFT$H3[i]<- allSubs$H3[currentLineUp]
+    shotsNoFT$H4[i]<- allSubs$H4[currentLineUp]
+    shotsNoFT$H5[i]<- allSubs$H5[currentLineUp]
+    shotsNoFT$A1[i]<- allSubs$A1[currentLineUp]
+    shotsNoFT$A2[i]<- allSubs$A2[currentLineUp]
+    shotsNoFT$A3[i]<- allSubs$A3[currentLineUp]
+    shotsNoFT$A4[i]<- allSubs$A4[currentLineUp]
+    shotsNoFT$A5[i]<- allSubs$A5[currentLineUp]
+
+}
+ 
+ 
+shotLocations
+
+
 
 
 ```
 
-
-
-```{r}
-fullString <- substr(data, shotLocations$shotChar[10], shotLocations$shotChar[10] + 450)
-awayScoreChr <- gregexpr("away_score", fullString)
-findAwayScore <- substr(fullString, awayScoreChr[[1]] + 13, awayScoreChr[[1]] + 18)
-
-findAwayScore
-if(grepl(",", findAwayScore)){
-  findComma <- gregexpr(",", findAwayScore)
-  findAwayScore <- substr(findAwayScore, 1, findComma[[1]] - 2)
-}
-findAwayScore
-
-
-```
-
-```{r}
-
-
-
-
-
-
-
-
-
-```
-
-
-shotLocations$H1<- ""
-    shotLocations$H2 <- 0
-    shotLocations$H3<- 0
-    shotLocations$H4<- 0
-    shotLocations$H5<- 0
-    shotLocations$A1<- 0
-    shotLocations$A2<- 0
-    shotLocations$A3<- 0
-    shotLocations$A4<- 0
-    shotLocations$A5<- 0
-    shotLocations
-
-EXTRA CODE:
-findHome <- gregexpr("home_team_id", data)
-homeTeam <- substr(data, findHome[[1]] + 21, findHome[[1]] + 22)
-
-if(grepl(",", homeTeam)){
-  findComma <- gregexpr(",", homeTeam)
-  homeTeam <- substr(homeTeam, 1, findComma[[1]] - 1)
-}
-
-findAway <- gregexpr("away_team_id", data)
-awayTeam <- substr(data, findAway[[1]] + 21, findAway[[1]] + 22)
-
-if(grepl(",", awayTeam)){
-  findComma <- gregexpr(",", awayTeam)
-  awayTeam <- substr(awayTeam, 1, findComma[[1]] - 1)
-}
-
-homeTeam <- as.numeric(homeTeam)
-awayTeam <- as.numeric(awayTeam)
-
-awayTeam
-
-
-EXTRA:
-
-An attempt to check if it is a free throw - was not working 
-findFreeThrow <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 450)
-ft <- grepl("free throw", findFreeThrow)
-shotLocations$FreeThrow[i] <- ft
-
-
-
-EXTRA: Home score works but away score doesnt
-awayscoreChr <- gregexpr("away_score", fullString)
-findAwayScore <- substr(fullString, awayscoreChr[[1]]+13, awayscoreChr[[1]] + 15)
-if(grepl(",", findAwayScore)){
-  findComma <- gregexpr(",", findAwayScore)
-  findAwayScore <- substr(findAwayScore, 1, findComma[[1]] - 2)
-}
-y <- substr(findAwayScore, 3, 3)
-if(!is.empty(y)){
-  findAwayScore <- substr(findAwayScore, 1, 2)
-}
-findAwayScore <- as.numeric(findAwayScore)
-shotLocations$AwayScore[i] <- findAwayScore
 
 
 
