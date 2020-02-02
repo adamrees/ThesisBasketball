@@ -29,10 +29,15 @@ library(rapportools)
 
 Getting the original data up. Pull in what URL you want and work from there
 ```{r}
-#url <- getURL("https://sports.yahoo.com/nba/los-angeles-lakers-golden-state-warriors-2019100509/?section=gamestream")
 
-#URL for the livestream
-url <- getURL("https://sports.yahoo.com/nba/miami-heat-dallas-mavericks-2019121406/?section=gamestream")
+#Raps Vs Cavs 1/31 URL
+#url <- getURL("https://sports.yahoo.com/nba/toronto-raptors-cleveland-cavaliers-2020013005/?section=gamestream")
+
+
+#url <- getURL("https://sports.yahoo.com/nba/charlotte-hornets-washington-wizards-2020013027/?section=gamestream")
+
+
+url <- getURL("https://sports.yahoo.com/nba/philadelphia-76ers-atlanta-hawks-2020013001/")
 
 #Character where JUMPBALL happened
 postJump <- gregexpr("JUMPBALL", url)
@@ -51,7 +56,7 @@ checkStarter <- substr(starterStuff, players[[1]][i] + 23, players[[1]][i] + 23)
 
 #Identify if they are a starter or not
 if(grepl(checkStarter, "0")){
-  starters[i] <- FALSE
+  starters[i] <- FALSE 
   } else{
   starters[i] <- TRUE
 }
@@ -64,6 +69,7 @@ startingIDs <- c()
 for(i in 1:nrow(justStarters)){
   startingIDs[i] <- toString(justStarters$playerIDs[i])
 }
+startingIDs[11] <- "NULL"
 startingIDs
 
 #We only want the data after the jump for the gameStream
@@ -107,17 +113,6 @@ shotLocations <- shotAndShooter
 ```
 
 
-shotLocations$H1 <- justStarters$playerIDs[[1]]
-shotLocations$H2 <- justStarters$playerIDs[[2]]
-shotLocations$H3 <- justStarters$playerIDs[[3]]
-shotLocations$H4 <- justStarters$playerIDs[[4]]
-shotLocations$H5 <- justStarters$playerIDs[[5]]
-shotLocations$A1 <- justStarters$playerIDs[[6]]
-shotLocations$A2 <- justStarters$playerIDs[[7]]
-shotLocations$A3 <- justStarters$playerIDs[[8]]
-shotLocations$A4 <- justStarters$playerIDs[[9]]
-shotLocations$A5 <- justStarters$playerIDs[[10]]
-
 
 Build a dataset for all of the subs
 ```{r}
@@ -138,6 +133,8 @@ for(i in 1:numSubs){
     allSubs$A3[1]<- startingIDs[8]
     allSubs$A4[1]<- startingIDs[9]
     allSubs$A5[1]<- startingIDs[10]
+    allSubs$ExtraSub[1]<- startingIDs[11]
+
   }
   else{
   
@@ -201,6 +198,12 @@ leavePlayer <- substr(findPlayer, playerLeave[[1]] + 15, playerLeave[[1]] + 18)
       allSubs$A5[i] <- enterPlayer
     }else{
       allSubs$A5[i] <- allSubs$A5[i-1]
+    }
+    if(allSubs$H1[i-1] != leavePlayer & allSubs$H2[i-1] != leavePlayer & allSubs$H3[i-1] != leavePlayer & allSubs$H4[i-1] != leavePlayer & allSubs$H5[i-1] != leavePlayer & allSubs$A1[i-1] != leavePlayer & allSubs$A2[i-1] != leavePlayer & allSubs$A3[i-1] != leavePlayer & allSubs$A4[i-1] != leavePlayer & allSubs$A5[i-1] != leavePlayer){
+    allSubs$ExtraSub[i] <- enterPlayer}
+    else{
+    allSubs$ExtraSub[i] <- allSubs$ExtraSub[i-1]
+
     }
     
 }
@@ -271,7 +274,6 @@ if(grepl(",", findAwayScore)){
 
 shotLocations$AwayScore[i] <- findAwayScore
 
-
     
 #Find the baseline offset by getting a large string after the shot, finding where it says baseline offset and taking the number after it
 findBaseline <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 120)
@@ -302,6 +304,11 @@ shotLocations$sidelineOffset[i] <- as.numeric(sideString)
 findMakeMiss <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 460)
 makeMiss <- gregexpr("shot_made", findMakeMiss)
 makeMiss <- substr(findMakeMiss, makeMiss[[1]] + 12, makeMiss[[1]] + 12)
+
+#find if the shot was a 3 or a 2
+shotType <- gregexpr("points", findMakeMiss)
+shotType <- substr(findMakeMiss, shotType[[1]] + 9, shotType[[1]] + 9)
+shotLocations$shotType[i] <- as.double(shotType)
 
 #find what team the player was on
 findTeam <- substr(data, shotLocations$shotChar[i], shotLocations$shotChar[i] + 460)
@@ -363,7 +370,7 @@ plot(makes, pch = 1)
 points(misses, pch = 4)
 
     shotsNoFT$H1<- ""
-    shotsNoFT$H2 <- ""
+    shotsNoFT$H2<- ""
     shotsNoFT$H3<- ""
     shotsNoFT$H4<- ""
     shotsNoFT$H5<- ""
@@ -395,16 +402,73 @@ for(i in 1:maxShot){
     shotsNoFT$A3[i]<- allSubs$A3[currentLineUp]
     shotsNoFT$A4[i]<- allSubs$A4[currentLineUp]
     shotsNoFT$A5[i]<- allSubs$A5[currentLineUp]
+    shotsNoFT$ExtraSub[i]<- allSubs$ExtraSub[currentLineUp]
+
 
 }
  
  
-shotLocations
+sixersVhawks <- shotsNoFT
+
 
 
 
 
 ```
+
+```{r}
+
+
+#Need to build two datasets, one with Player X on the court and one without
+playerX <- "6163"
+xInGame <- finalShots %>% filter(H1 == playerX | H2 == playerX | H3 == playerX | H4 == playerX | H5 == playerX)
+xInGame
+```
+
+```{r}
+fullData <- rbind(rapsVcavs, hornetsVwiz, sixersVhawks)
+
+oneQuarter <- filter(fullData, Period == "3")
+otherQ <- filter(fullData, Period != "3")
+shotsInQTR <- nrow(oneQuarter)
+
+#need to make sure there is equal spacing
+oneQ <- kde2d(oneQuarter$X_LOC, oneQuarter$Y_LOC, lims = c(-250, 250, -20, 375))
+
+otherQs <- kde2d(otherQ$X_LOC, otherQ$Y_LOC, lims = c(-250, 250, -20, 375))
+
+
+checkVal<- sum(abs(oneQ$z - otherQs$z))
+
+
+
+store <- c()
+reps <- 1000
+
+
+for(i in 1:reps){
+  x <- sample_n(fullData, size = nrow(fullData))
+  a <- x[1:123,]
+  b <- x[124:528,]
+  
+  randomOne <- kde2d(a$X_LOC, a$Y_LOC, lims = c(-250, 250, -20, 375))
+  randomTwo <- kde2d(b$X_LOC, b$Y_LOC, lims = c(-250, 250, -20, 375))
+  
+  value <- sum(abs(randomOne$z - randomTwo$z))
+  store <- c(store, value)
+  
+}
+
+
+mean(store > checkVal)
+
+```
+
+```{r}
+persp(oneQ, theta = 0, phi = 55)
+persp(otherQs)
+```
+
 
 
 
