@@ -26,18 +26,84 @@ library(rapportools)
 
 ```
 
+#URLs for all the games between 1/1 - 1/2
+url1 <- getURL("https://sports.yahoo.com/nba/orlando-magic-washington-wizards-2020010127/?section=gamestream")
+url2 <- getURL("https://sports.yahoo.com/nba/portland-trail-blazers-new-york-knicks-2020010118/?section=gamestream")
+url3 <- getURL("https://sports.yahoo.com/nba/minnesota-timberwolves-milwaukee-bucks-2020010115/?section=gamestream")
+url4 <- getURL("https://sports.yahoo.com/nba/phoenix-suns-los-angeles-lakers-2020010113/?section=gamestream")
+url5 <- getURL("https://sports.yahoo.com/nba/charlotte-hornets-cleveland-cavaliers-2020010205/?section=gamestream")
+url6 <- getURL("https://sports.yahoo.com/nba/denver-nuggets-indiana-pacers-2020010211/?section=gamestream")
+url7 <- getURL("https://sports.yahoo.com/nba/toronto-raptors-miami-heat-2020010214/?section=gamestream")
+url8 <- getURL("https://sports.yahoo.com/nba/utah-jazz-chicago-bulls-2020010204/?section=gamestream")
+url9 <- getURL("https://sports.yahoo.com/nba/golden-state-warriors-minnesota-timberwolves-2020010216/?section=gamestream")
+url10 <- getURL("https://sports.yahoo.com/nba/brooklyn-nets-dallas-mavericks-2020010206/?section=gamestream")
+url11 <- getURL("https://sports.yahoo.com/nba/oklahoma-city-thunder-san-antonio-spurs-2020010224/?section=gamestream")
+url12 <- getURL("https://sports.yahoo.com/nba/memphis-grizzlies-sacramento-kings-2020010223/?section=gamestream")
+url13 <- getURL("https://sports.yahoo.com/nba/detroit-pistons-los-angeles-clippers-2020010212/?section=gamestream")
+
+```{r}
+url1 <- getURL("https://sports.yahoo.com/nba/new-york-knicks-san-antonio-spurs-2019102324/?section=gamestream")
+url2 <- getURL("https://sports.yahoo.com/nba/washington-wizards-san-antonio-spurs-2019102624/?section=gamestream")
+url3 <- getURL("https://sports.yahoo.com/nba/portland-trail-blazers-san-antonio-spurs-2019102824/?section=gamestream")
+url4 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-los-angeles-clippers-2019103112/?section=gamestream")
+url5 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-golden-state-warriors-2019110109/?section=gamestream")
+url6 <- getURL("https://sports.yahoo.com/nba/los-angeles-lakers-san-antonio-spurs-2019110324/?section=gamestream")
+url7 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-atlanta-hawks-2019110501/?section=gamestream")
+url8 <- getURL("https://sports.yahoo.com/nba/oklahoma-city-thunder-san-antonio-spurs-2019110724/?section=gamestream")
+url9 <- getURL("https://sports.yahoo.com/nba/boston-celtics-san-antonio-spurs-2019110924/?section=gamestream")
+url10 <- getURL("https://sports.yahoo.com/nba/memphis-grizzlies-san-antonio-spurs-2019111124/?section=gamestream")
+url11 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-minnesota-timberwolves-2019111316/?section=gamestream")
+url12 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-orlando-magic-2019111519/?section=gamestream")
+url13 <- getURL("https://sports.yahoo.com/nba/portland-trail-blazers-san-antonio-spurs-2019111624/?section=gamestream")
+url14<- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-dallas-mavericks-2019111806/?section=gamestream")
+url15<- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-washington-wizards-2019112027/?section=gamestream")
+url16 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-philadelphia-76ers-2019112220/?section=gamestream")
+url17 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-new-york-knicks-2019112318/?section=gamestream")
+url18 <- getURL("https://sports.yahoo.com/nba/los-angeles-lakers-san-antonio-spurs-2019112524/?section=gamestream")
+url19 <- getURL("https://sports.yahoo.com/nba/minnesota-timberwolves-san-antonio-spurs-2019112724/?section=gamestream")
+url20 <- getURL("https://sports.yahoo.com/nba/los-angeles-clippers-san-antonio-spurs-2019112924/?section=gamestream")
+url21 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-detroit-pistons-2019120108/?section=gamestream")
+url22 <- getURL("https://sports.yahoo.com/nba/houston-rockets-san-antonio-spurs-2019120324/?section=gamestream")
+url23 <- getURL("https://sports.yahoo.com/nba/sacramento-kings-san-antonio-spurs-2019120624/?section=gamestream")
+url24 <- getURL("https://sports.yahoo.com/nba/cleveland-cavaliers-san-antonio-spurs-2019121224/?section=gamestream")
+url25 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-phoenix-suns-2019121421/?section=gamestream")
+url26 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-houston-rockets-2019121610/?section=gamestream")
+url27 <- getURL("https://sports.yahoo.com/nba/brooklyn-nets-san-antonio-spurs-2019121924/?section=gamestream")
+url28 <- getURL("https://sports.yahoo.com/nba/los-angeles-clippers-san-antonio-spurs-2019122124/?section=gamestream")
+url29 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-memphis-grizzlies-2019122329/?section=gamestream")
+url30 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-dallas-mavericks-2019122606/?section=gamestream")
+url31 <- getURL("https://sports.yahoo.com/nba/detroit-pistons-san-antonio-spurs-2019122824/?section=gamestream")
+url32 <- getURL("https://sports.yahoo.com/nba/golden-state-warriors-san-antonio-spurs-2019123124/?section=gamestream")
+url33 <- getURL("https://sports.yahoo.com/nba/oklahoma-city-thunder-san-antonio-spurs-2020010224/?section=gamestream")
+url34 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-milwaukee-bucks-2020010415/?section=gamestream")
+url35 <- getURL("https://sports.yahoo.com/nba/milwaukee-bucks-san-antonio-spurs-2020010624/?section=gamestream")
+url36 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-boston-celtics-2020010802/?section=gamestream")
+url37 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-memphis-grizzlies-2020011029/?section=gamestream")
+url38 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-toronto-raptors-2020011228/?section=gamestream")
+url39 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-miami-heat-2020011514/?section=gamestream")
+url40 <- getURL("https://sports.yahoo.com/nba/atlanta-hawks-san-antonio-spurs-2020011724/?section=gamestream")
+url41 <- getURL("https://sports.yahoo.com/nba/miami-heat-san-antonio-spurs-2020011924/?section=gamestream")
+url42 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-phoenix-suns-2020012021/?section=gamestream")
+url43 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-new-orleans-pelicans-2020012203/?section=gamestream")
+url44 <- getURL("https://sports.yahoo.com/nba/phoenix-suns-san-antonio-spurs-2020012424/?section=gamestream")
+url45 <- getURL("https://sports.yahoo.com/nba/toronto-raptors-san-antonio-spurs-2020012624/?section=gamestream")
+url46 <- getURL("https://sports.yahoo.com/nba/san-antonio-spurs-chicago-bulls-2020012704/?section=gamestream")
+url47 <- getURL("https://sports.yahoo.com/nba/utah-jazz-san-antonio-spurs-2020012924/?section=gamestream")
+url48 <- getURL("https://sports.yahoo.com/nba/charlotte-hornets-san-antonio-spurs-2020020124/?section=gamestream")
+
+
+
+```
+
+
 
 Getting the original data up. Pull in what URL you want and work from there
 ```{r}
 
-#Raps Vs Cavs 1/31 URL
-#url <- getURL("https://sports.yahoo.com/nba/toronto-raptors-cleveland-cavaliers-2020013005/?section=gamestream")
 
 
-#url <- getURL("https://sports.yahoo.com/nba/charlotte-hornets-washington-wizards-2020013027/?section=gamestream")
+url <- url48
 
-
-url <- getURL("https://sports.yahoo.com/nba/philadelphia-76ers-atlanta-hawks-2020013001/")
 
 #Character where JUMPBALL happened
 postJump <- gregexpr("JUMPBALL", url)
@@ -74,10 +140,10 @@ startingIDs
 
 #We only want the data after the jump for the gameStream
 data <- substr(url, postJump[[1]], nchar(url))
-```
 
 
-```{r}
+
+
 
 #Get all of the characters where shots were taken
 shots <- gregexpr("SHOT", data)
@@ -110,12 +176,11 @@ shotAndShooter <- tibble(shotChar, shooterID)
 
 #you can add a filter here
 shotLocations <- shotAndShooter
-```
 
 
 
-Build a dataset for all of the subs
-```{r}
+
+#Build a dataset for all of the subs
 subChars <- append(0,subs[[1]])
 allSubs <- data.frame(subChars)
 numSubs <- length(allSubs[[1]])
@@ -206,17 +271,9 @@ leavePlayer <- substr(findPlayer, playerLeave[[1]] + 15, playerLeave[[1]] + 18)
 
     }
     
-}
-    
-  
   }
-```
-
-
-
-
-Currently: getting NAs on the enter player and leave player. need to get the leave and enter player better like grab the whole string and work from there
-```{r}
+    
+}
 
     
 
@@ -408,25 +465,30 @@ for(i in 1:maxShot){
 }
  
  
-sixersVhawks <- shotsNoFT
+currentGame <- shotsNoFT
 
 
 
+fullData <- rbind(currentGame, fullData)
 
 
-```
 
-```{r}
+fullData
 
 
 #Need to build two datasets, one with Player X on the court and one without
-playerX <- "6163"
-xInGame <- finalShots %>% filter(H1 == playerX | H2 == playerX | H3 == playerX | H4 == playerX | H5 == playerX)
-xInGame
+#playerX <- "6163"
+#xInGame <- finalShots %>% filter(H1 == playerX | H2 == playerX | H3 == playerX | H4 == playerX | H5 == playerX)
+#xInGame
 ```
 
 ```{r}
-fullData <- rbind(rapsVcavs, hornetsVwiz, sixersVhawks)
+fullData
+```
+
+
+```{r}
+#fullData <- rbind(rapsVcavs, hornetsVwiz, sixersVhawks)
 
 oneQuarter <- filter(fullData, Period == "3")
 otherQ <- filter(fullData, Period != "3")
@@ -437,7 +499,7 @@ oneQ <- kde2d(oneQuarter$X_LOC, oneQuarter$Y_LOC, lims = c(-250, 250, -20, 375))
 
 otherQs <- kde2d(otherQ$X_LOC, otherQ$Y_LOC, lims = c(-250, 250, -20, 375))
 
-
+oneQ
 checkVal<- sum(abs(oneQ$z - otherQs$z))
 
 
@@ -448,8 +510,8 @@ reps <- 1000
 
 for(i in 1:reps){
   x <- sample_n(fullData, size = nrow(fullData))
-  a <- x[1:123,]
-  b <- x[124:528,]
+  a <- x[1:shotsInQTR + 0,]
+  b <- x[shotsInQTR+1:528,]
   
   randomOne <- kde2d(a$X_LOC, a$Y_LOC, lims = c(-250, 250, -20, 375))
   randomTwo <- kde2d(b$X_LOC, b$Y_LOC, lims = c(-250, 250, -20, 375))
@@ -465,8 +527,8 @@ mean(store > checkVal)
 ```
 
 ```{r}
-persp(oneQ, theta = 0, phi = 55)
-persp(otherQs)
+persp(oneQ, theta = 20, phi = 55)
+persp(otherQs, theta = 20, phi = 55)
 ```
 
 
