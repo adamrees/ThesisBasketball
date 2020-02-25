@@ -564,14 +564,6 @@ x <- seq(-250, 250, by = 25)
 y <- seq(-20, 375, by = 25)
 
 
-```
-
-
-
-
-
-```{r}
-
 differential <- oneQ$z/sum(oneQ$z) - otherQs$z/sum(otherQs$z)
 
 colorTable<- designer.colors(20, c( "blue","lightblue", "pink"  ,"red") )
@@ -584,45 +576,7 @@ persp3D(oneQ$x, oneQ$y, differential, theta = 15, phi = 40, expand = 0.6, col = 
 ```
 
 
-```{r}
-
-library(MASS)
-library (tmvtnorm)
-bivn <- mvrnorm(1000, mu = c(0, 0), Sigma = matrix(c(1, .5, .5, 1), 2))
-bivn2 <- mvrnorm(1000, mu = c(0, 0), Sigma = matrix(c(1.5, 1.5, 1.5, 1.5), 2))
-
-# now we do a kernel density estimate
-bivn.kde <- kde2d(bivn[,1], bivn[,2], n = 50)
-bivn.kde2 <- kde2d(bivn2[,1], bivn[,2], n = 50)
-
-# fancy perspective
-persp(bivn.kde, phi = 45, theta = 20, shade = .4, border = NA)
-par(new=TRUE)
-persp(bivn.kde2, phi = 45, theta = 20, shade = .1, border = NA)
-
-
-
-
-
-```
-```{r}
-bivn <- mvrnorm(1000, mu = c(0, 0), Sigma = matrix(c(1, .5, .5, 1), 2))
-
-# now we do a kernel density estimate
-bivn.kde <- kde2d(bivn[,1], bivn[,2], n = 50)
-
-# now plot your results
-contour(bivn.kde)
-image(bivn.kde)
-persp(bivn.kde, phi = 45, theta = 30)
-
-# fancy contour with image
-image(bivn.kde); contour(bivn.kde, add = T)
-
-# fancy perspective
-persp(bivn.kde, phi = 45, theta = 30, shade = .1, border = NA)
-```
-
+Gabes code
 ```{r}
 ---
 title: "Who started the Quarter"
