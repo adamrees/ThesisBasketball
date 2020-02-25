@@ -140,7 +140,6 @@ startingIDs <- c()
 for(i in 1:nrow(justStarters)){
   startingIDs[i] <- toString(justStarters$playerIDs[i])
 }
-startingIDs[11] <- "NULL"
 startingIDs
 
 #We only want the data after the jump for the gameStream
@@ -203,8 +202,6 @@ for(i in 1:numSubs){
     allSubs$A3[1]<- startingIDs[8]
     allSubs$A4[1]<- startingIDs[9]
     allSubs$A5[1]<- startingIDs[10]
-    allSubs$ExtraSub[1]<- startingIDs[11]
-
   }
   else{
   
@@ -269,12 +266,7 @@ leavePlayer <- substr(findPlayer, playerLeave[[1]] + 15, playerLeave[[1]] + 18)
     }else{
       allSubs$A5[i] <- allSubs$A5[i-1]
     }
-    if(allSubs$H1[i-1] != leavePlayer & allSubs$H2[i-1] != leavePlayer & allSubs$H3[i-1] != leavePlayer & allSubs$H4[i-1] != leavePlayer & allSubs$H5[i-1] != leavePlayer & allSubs$A1[i-1] != leavePlayer & allSubs$A2[i-1] != leavePlayer & allSubs$A3[i-1] != leavePlayer & allSubs$A4[i-1] != leavePlayer & allSubs$A5[i-1] != leavePlayer){
-    allSubs$ExtraSub[i] <- enterPlayer}
-    else{
-    allSubs$ExtraSub[i] <- allSubs$ExtraSub[i-1]
-
-    }
+  
     
   }
     
@@ -466,15 +458,16 @@ for(i in 1:maxShot){
     shotsNoFT$A3[i]<- allSubs$A3[currentLineUp]
     shotsNoFT$A4[i]<- allSubs$A4[currentLineUp]
     shotsNoFT$A5[i]<- allSubs$A5[currentLineUp]
-    shotsNoFT$ExtraSub[i]<- allSubs$ExtraSub[currentLineUp]
 
 
 }
  
+ shotsNoFT$pointsPerShot <- shotsNoFT$MakeMiss*currentGame$shotType
+
  
-currentGame <- shotsNoFT
+ currentGame <- shotsNoFT
 
-
+(currentGame)
 
 fullData <- rbind(currentGame, fullData)
 
@@ -487,8 +480,11 @@ fullData
 #xInGame
 ```
 
+
+
 ```{r}
 
+# Added in new variables to find out the minutes left 
 
 for(i in 1: nrow(fullData)){
 fullData$winning[i] <- (fullData$HomeTeam[i] == "24" && (as.numeric(fullData$HomeScore[i]) > as.numeric(fullData$AwayScore[i]))) || (fullData$HomeTeam[i] != "24" && (as.numeric(fullData$HomeScore[i]) < as.numeric(fullData$AwayScore[i])))
@@ -500,14 +496,14 @@ fullData$lessFive[i] <- as.numeric(x)
 
 }
 
-
+#Final dataset
 fullData
 ```
-it <- paste("00:", test$Time[i], sep ="")
-test$newTime[i] <- as.chron(chron(times=it))
 
+
+Randomization Test
 ```{r}
-nrow(fullData)
+#Seperate into 2 different dataset
 
 oneQuarter <- filter(fullData, Period == "4", winning == FALSE, lessFive < 5)
 otherQ <- filter(fullData, Period != "4" | winning != FALSE | lessFive >= 5)
@@ -515,7 +511,7 @@ otherQ <- filter(fullData, Period != "4" | winning != FALSE | lessFive >= 5)
 
 #need to make sure there is equal spacing
 oneQ <- kde2d(oneQuarter$X_LOC, oneQuarter$Y_LOC, lims = c(-250, 250, -20, 375))
-
+oneQ
 otherQs <- kde2d(otherQ$X_LOC, otherQ$Y_LOC, lims = c(-250, 250, -20, 375))
 
 checkVal<- sum(abs(oneQ$z - otherQs$z))
@@ -546,21 +542,274 @@ mean(store > checkVal)
 
 
 ```
-0.001033665
-0
 
 
-8494
-477
+Visualizations
+```{r}
+persp(oneQ, theta = 45, phi = 55)
+persp(otherQs, theta = 45, phi = 55)
+
+differential <- differential * 1000
+
+persp(oneQ$x, oneQ$y, differential, 
+  theta = 30, phi = 30, expand = 0.19, scale=FALSE,
+  shade=NA, col=colors[z.facet.range], border="grey80",
+  box=FALSE, zlim = c(min(differential), max(differential)))
+
+persp(differential, theta=45, phi=30)
+
+persp(differential, theta=55, phi=30)
+
+x <- seq(-250, 250, by = 25)
+y <- seq(-20, 375, by = 25)
+
+
+```
 
 
 
 
 
 ```{r}
-persp(oneQ, theta = 45, phi = 55)
-persp(otherQs, theta = 45, phi = 55)
+
+differential <- oneQ$z/sum(oneQ$z) - otherQs$z/sum(otherQs$z)
+
+colorTable<- designer.colors(20, c( "blue","lightblue", "pink"  ,"red") )
+image.plot(differential, col=colorTable)
+
+#clim = c(-.012, .004)
+persp(differential, theta = 15, phi= 40)
+
+persp3D(oneQ$x, oneQ$y, differential, theta = 15, phi = 40, expand = 0.6, col = colorTable, colkey = TRUE, clim = c(-.012, .004))
 ```
+
+
+```{r}
+
+library(MASS)
+library (tmvtnorm)
+bivn <- mvrnorm(1000, mu = c(0, 0), Sigma = matrix(c(1, .5, .5, 1), 2))
+bivn2 <- mvrnorm(1000, mu = c(0, 0), Sigma = matrix(c(1.5, 1.5, 1.5, 1.5), 2))
+
+# now we do a kernel density estimate
+bivn.kde <- kde2d(bivn[,1], bivn[,2], n = 50)
+bivn.kde2 <- kde2d(bivn2[,1], bivn[,2], n = 50)
+
+# fancy perspective
+persp(bivn.kde, phi = 45, theta = 20, shade = .4, border = NA)
+par(new=TRUE)
+persp(bivn.kde2, phi = 45, theta = 20, shade = .1, border = NA)
+
+
+
+
+
+```
+```{r}
+bivn <- mvrnorm(1000, mu = c(0, 0), Sigma = matrix(c(1, .5, .5, 1), 2))
+
+# now we do a kernel density estimate
+bivn.kde <- kde2d(bivn[,1], bivn[,2], n = 50)
+
+# now plot your results
+contour(bivn.kde)
+image(bivn.kde)
+persp(bivn.kde, phi = 45, theta = 30)
+
+# fancy contour with image
+image(bivn.kde); contour(bivn.kde, add = T)
+
+# fancy perspective
+persp(bivn.kde, phi = 45, theta = 30, shade = .1, border = NA)
+```
+
+```{r}
+---
+title: "Who started the Quarter"
+author: "TACKO FALL"
+date: "2/15/2020"
+output: pdf_document
+---
+
+```
+
+
+Load in the game stream
+```{r}
+url <- getURL("https://nam01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fsports.yahoo.com%2Fnba%2Foklahoma-city-thunder-new-orleans-pelicans-2020021303%2F%3Fsection%3Dgamestream&amp;data=02%7C01%7Casra2016%40mymail.pomona.edu%7Ce7770d64264d484d0d4d08d7b3d3bd0f%7C817f590439044ee8b3a5a65d4746ff70%7C0%7C0%7C637175594304714962&amp;sdata=dy37PspODCe8ZvUcSfHaRGCixkBNhNg%2FkQ80tgXRkyM%3D&amp;reserved=0")
+```
+
+Find out when each quarter ends - end of second quarter doesn't follow pattern
+```{r}
+q1 <- gregexpr("End of 1st Quarter", url)[[1]][1]
+q2 <- gregexpr("Halftime", url)[[1]]
+q3 <- gregexpr("End of 3rd Quarter", url)[[1]][1]
+q4 <- gregexpr("End of 4th Quarter", url)[[1]][1]
+q2 <- q2[which(q2 > q1 & q2 <q3) ]
+quarters <- c(q1,q2,q3,q4)
+```
+
+A function that turns a game time MM:SS into a numeric variable of seconds
+```{r}
+to.seconds <- function(time) {
+  colon <- gregexpr(":", time)[[1]]
+  min <- as.numeric(substr(time, 1,(colon-1)))
+  sec <- as.numeric(substr(time,colon+1,47))
+  min*60+sec
+}
+```
+
+Grab only the relevant gamestream section
+```{r}
+what.q <- 2
+qurl <- substr(url,quarters[what.q-1], quarters[what.q])
+```
+
+Find out who recorded a stat in that quarter
+```{r}
+player <- gregexpr("nba.p.", qurl)
+ingame <- c()
+for (i in 1:length(player[[1]]))
+  ingame[i] <- substr(qurl, player[[1]][i]+6, player[[1]][i]+9)
+```
+
+Find out when the subs happened, and who entered and who exited
+```{r}
+sub <- gregexpr("enters game", qurl)[[1]]
+sub.times <- c()
+sub.times.sec <- c()
+for (i in 1:length(sub)) {
+  sub.times[i] <- substr(qurl, sub[i]+39, sub[i]+43)
+  if (substr(sub.times[i],2,2)==":")
+    sub.times[i] <- substr(sub.times[i],1,4)
+  sub.times.sec[i] <- to.seconds(sub.times[i])
+}
+
+enter <- c()
+exit <- c()
+for (i in 1:length(sub)) {
+  enter[i] <- ingame[which.max(1:length(player[[1]])*(player[[1]]<sub[i]))]
+  exit[i] <- ingame[which.max(1:length(player[[1]])*(player[[1]]<sub[i]))+1]
+}
+```
+
+If they never were recorded as entering or the first thing they did was exited, they must have started the Q
+```{r}
+subbed <- unique(c(enter, exit))
+start.quarter <- c()
+for (i in 1:length(subbed)) {
+  if (sum(enter==subbed[i])==0) {
+    start.quarter <- c(start.quarter, subbed[i])
+  }
+    if (sum(enter==subbed[i])>0 & sum(exit==subbed[i])>0) {
+      if (min(sub.times.sec[enter==subbed[i]]) < min(sub.times.sec[exit==subbed[i]]))
+            start.quarter <- c(start.quarter, subbed[i])
+    }
+}
+```
+
+If someone plays the whole quarter, we find them by in-game stats rather than subs
+```{r}
+if (length(start.quarter) < 10) {
+  ingame.u <- unique(ingame)
+  for (i in 1:length(ingame.u)) {
+    if (sum(ingame.u[i]==subbed)==0)
+      start.quarter <- c(start.quarter, ingame.u)
+  }
+}
+```
+
+I don't know who plays for what team, hopefully you do
+```{r}
+start.quarter
+```
+
+
+
+
+```{r}
+
+
+
+x1 <- currentGame$X_LOC
+x2 <- currentGame$Y_LOC
+y <- currentGame$pointsPerShot
+
+#put the if .. 
+rbf.k <- function(x,y,sigma)
+  return(exp(-1/(2*sigma^2)*(sum((x-y)^2))))
+
+gpreg <- function(x, y, lam, sig, design) {
+  # Evaluates mean and covariance of GP at grid of points on [0,1]
+  # Inputs:
+  # x, y: input and output values of data set
+  # lam: smoothing parameter in RBF kernel
+  # sig: error standard deviation of y
+  # design: grid of points to evaluate the GP
+  # Returns:
+  # mean=posterior mean, vars=posterior variance, and design=evaluation points
+  n <- length(y)
+  Sigma <- matrix(0,nrow=n+nrow(design), ncol=n+nrow(design))
+  all <- rbind(x, design)
+  for (i in 1:nrow(Sigma)) {
+    for (j in i:nrow(Sigma))
+      Sigma[i,j] <- rbf.k(all[i,], all[j,], lam) -> Sigma[j,i]
+  }
+  S11 <- Sigma[1:n, 1:n]
+  S12 <- Sigma[1:n, (n+1):ncol(Sigma)]
+  S21 <- Sigma[(n+1):ncol(Sigma), 1:n]
+  S22 <- Sigma[(n+1):ncol(Sigma),(n+1):ncol(Sigma)]
+  inv <- S21%*%solve(S11+sig^2*diag(n))
+  mean <- inv%*%y
+  cov <- S22-inv%*%S12
+  vars <- diag(cov)
+  return(list(mean=mean, vars=vars))
+}
+
+
+
+
+
+
+
+
+grid.a <- seq(-250,250,10)
+grid.b <- seq(-10,490,10)
+grid <- c()
+for (i in 1:length(grid.a)) {
+  for (j in 1:length(grid.b)) {
+    grid <- rbind(grid, c(grid.a[i], grid.b[j]))
+  }
+}
+
+start.time <- Sys.time()
+x <- cbind(x1,x2)
+fit <- gpreg(x, y, lam=30, sig=.5, design=grid)
+end.time <- Sys.time()
+end.time-star.time
+
+k <- 1
+mean.fit <- matrix(0, nrow=length(grid.a), ncol=length(grid.b))
+for (i in 1:length(grid.a)) {
+  for (j in 1:length(grid.b)) {
+    mean.fit[i,j] <- fit$mean[k]
+    k <- k + 1
+  }
+}
+persp(grid.a, grid.b, mean.fit, theta=60, phi=60)
+image(grid.a, grid.b, mean.fit)
+
+```
+
+Error in solve.default(S11 + sig^2 * diag(n)) : 'a' is 0-diml
+
+-250
+[1] -28.05
+[1] 250
+[1] 744.94
+
+
+
 
 
 
