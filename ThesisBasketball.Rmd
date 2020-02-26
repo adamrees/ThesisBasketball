@@ -26,6 +26,30 @@ library(rapportools)
 
 ```
 
+
+```{r}
+GameSchedule <- read.csv("~/Desktop/Thesis/ThesisBasketball/GameSchedule", sep="")
+head(GameSchedule)
+```
+
+```{r}
+for(i in 1:nrow(GameSchedule)){
+  GameSchedule$Month[i] <- substr(toString(GameSchedule$Date[i]), 0, 2)
+  GameSchedule$Day[i] <- substr(toString(GameSchedule$Date[i]), 4, 5)
+
+}
+head(GameSchedule)
+```
+
+```{r}
+library(dplyr)
+TeamInfo <- read.csv("~/Desktop/Thesis/ThesisBasketball/TeamInfo", sep="")
+TeamInfo
+
+TeamInfo %>% filter(Team == "MIL") %>% select(FullLocation)
+```
+
+
 #URLs for all the games between 1/1 - 1/2
 url1 <- getURL("https://sports.yahoo.com/nba/orlando-magic-washington-wizards-2020010127/?section=gamestream")
 url2 <- getURL("https://sports.yahoo.com/nba/portland-trail-blazers-new-york-knicks-2020010118/?section=gamestream")
@@ -576,24 +600,15 @@ persp3D(oneQ$x, oneQ$y, differential, theta = 15, phi = 40, expand = 0.6, col = 
 ```
 
 
-Gabes code
-```{r}
----
-title: "Who started the Quarter"
-author: "TACKO FALL"
-date: "2/15/2020"
-output: pdf_document
----
-
-```
-
-
 Load in the game stream
 ```{r}
-url <- getURL("https://nam01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fsports.yahoo.com%2Fnba%2Foklahoma-city-thunder-new-orleans-pelicans-2020021303%2F%3Fsection%3Dgamestream&amp;data=02%7C01%7Casra2016%40mymail.pomona.edu%7Ce7770d64264d484d0d4d08d7b3d3bd0f%7C817f590439044ee8b3a5a65d4746ff70%7C0%7C0%7C637175594304714962&amp;sdata=dy37PspODCe8ZvUcSfHaRGCixkBNhNg%2FkQ80tgXRkyM%3D&amp;reserved=0")
+
+url <- getURL("https://sports.yahoo.com/nba/utah-jazz-san-antonio-spurs-2020012924/?section=gamestream")
+
 ```
 
-Find out when each quarter ends - end of second quarter doesn't follow pattern
+
+Find out when each quarter ends - end of second quarter doesn’t follow pattern
 ```{r}
 q1 <- gregexpr("End of 1st Quarter", url)[[1]][1]
 q2 <- gregexpr("Halftime", url)[[1]]
@@ -603,13 +618,14 @@ q2 <- q2[which(q2 > q1 & q2 <q3) ]
 quarters <- c(q1,q2,q3,q4)
 ```
 
+
 A function that turns a game time MM:SS into a numeric variable of seconds
 ```{r}
 to.seconds <- function(time) {
-  colon <- gregexpr(":", time)[[1]]
-  min <- as.numeric(substr(time, 1,(colon-1)))
-  sec <- as.numeric(substr(time,colon+1,47))
-  min*60+sec
+colon <- gregexpr(":", time)[[1]]
+min <- as.numeric(substr(time, 1,(colon-1)))
+sec <- as.numeric(substr(time,colon+1,47))
+min*60+sec
 }
 ```
 
@@ -617,15 +633,14 @@ Grab only the relevant gamestream section
 ```{r}
 what.q <- 2
 qurl <- substr(url,quarters[what.q-1], quarters[what.q])
-```
 
-Find out who recorded a stat in that quarter
-```{r}
+#Find out who recorded a stat in that quarter
 player <- gregexpr("nba.p.", qurl)
 ingame <- c()
 for (i in 1:length(player[[1]]))
-  ingame[i] <- substr(qurl, player[[1]][i]+6, player[[1]][i]+9)
+ingame[i] <- substr(qurl, player[[1]][i]+6, player[[1]][i]+9)
 ```
+
 
 Find out when the subs happened, and who entered and who exited
 ```{r}
@@ -633,17 +648,17 @@ sub <- gregexpr("enters game", qurl)[[1]]
 sub.times <- c()
 sub.times.sec <- c()
 for (i in 1:length(sub)) {
-  sub.times[i] <- substr(qurl, sub[i]+39, sub[i]+43)
-  if (substr(sub.times[i],2,2)==":")
-    sub.times[i] <- substr(sub.times[i],1,4)
-  sub.times.sec[i] <- to.seconds(sub.times[i])
+sub.times[i] <- substr(qurl, sub[i]+39, sub[i]+43)
+if (substr(sub.times[i],2,2)==":")
+sub.times[i] <- substr(sub.times[i],1,4)
+sub.times.sec[i] <- to.seconds(sub.times[i])
 }
 
 enter <- c()
 exit <- c()
 for (i in 1:length(sub)) {
-  enter[i] <- ingame[which.max(1:length(player[[1]])*(player[[1]]<sub[i]))]
-  exit[i] <- ingame[which.max(1:length(player[[1]])*(player[[1]]<sub[i]))+1]
+enter[i] <- ingame[which.max(1:length(player[[1]])*(player[[1]]<sub[i]))]
+exit[i] <- ingame[which.max(1:length(player[[1]])*(player[[1]]<sub[i]))+1]
 }
 ```
 
@@ -652,33 +667,35 @@ If they never were recorded as entering or the first thing they did was exited, 
 subbed <- unique(c(enter, exit))
 start.quarter <- c()
 for (i in 1:length(subbed)) {
-  if (sum(enter==subbed[i])==0) {
-    start.quarter <- c(start.quarter, subbed[i])
-  }
-    if (sum(enter==subbed[i])>0 & sum(exit==subbed[i])>0) {
-      if (min(sub.times.sec[enter==subbed[i]]) < min(sub.times.sec[exit==subbed[i]]))
-            start.quarter <- c(start.quarter, subbed[i])
-    }
+if (sum(enter==subbed[i])==0) {
+start.quarter <- c(start.quarter, subbed[i])
+}
+if (sum(enter==subbed[i])>0 & sum(exit==subbed[i])>0) {
+if (min(sub.times.sec[enter==subbed[i]]) < min(sub.times.sec[exit==subbed[i]]))
+start.quarter <- c(start.quarter, subbed[i])
+}
 }
 ```
 
 If someone plays the whole quarter, we find them by in-game stats rather than subs
 ```{r}
 if (length(start.quarter) < 10) {
-  ingame.u <- unique(ingame)
-  for (i in 1:length(ingame.u)) {
-    if (sum(ingame.u[i]==subbed)==0)
-      start.quarter <- c(start.quarter, ingame.u)
-  }
+ingame.u <- unique(ingame)
+for (i in 1:length(ingame.u)) {
+if (sum(ingame.u[i]==subbed)==0)
+start.quarter <- c(start.quarter, ingame.u)
+}
 }
 ```
 
-I don't know who plays for what team, hopefully you do
+
+I don’t know who plays for what team, hopefully you do
 ```{r}
 start.quarter
+
 ```
 
-
+END
 
 
 ```{r}
