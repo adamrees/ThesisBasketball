@@ -30,7 +30,7 @@ library(rapportools)
 
 ```{r}
 
-GameSchedule <-read.csv("~/Desktop/nba-full-schedule-2019-2020.csv")
+GameSchedule <-read.csv("~/Desktop/Thesis/ThesisBasketball/nba-full-schedule-2019-2020.csv")
 GameSchedule <- separate(GameSchedule, "game_date", c("Month", "Day", "Year"), sep = "/")
 GameSchedule <- GameSchedule %>% dplyr::select(away_team, home_team, Month, Day, Year)
 TeamInfo <- read.csv("~/Desktop/Thesis/ThesisBasketball/TeamInfo", sep="")
