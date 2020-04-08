@@ -1,0 +1,174 @@
+---
+title: "SunsVizOnly"
+author: "Adam Rees"
+date: "3/26/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(rvest)
+library(dplyr)
+require(XML)
+require(RCurl)
+require(stringr)
+require(png)
+library(XML)
+library(tidyr)
+library(MASS)
+library(sp)
+library(gstat)
+
+
+library(rapportools)
+
+```
+
+
+#Things needed for this dataset to work - side of basket shot was taken at
+```{r}
+sunsgames <- read.csv("~/Desktop/Thesis/ThesisBasketball/sunsgames.csv")
+
+sunsgames$pointsPerShot <- NULL
+sunsgames$X_LOC <- NULL
+sunsgames$Y_LOC <- NULL
+for(i in 1:nrow(sunsgames)){
+  sunsgames$X_LOC[i] <- as.double(sunsgames$baseline[i] * 500)
+  sunsgames$Y_LOC[i] <- as.double(sunsgames$sideline[i] * 940)
+  sunsgames$pointsPerShot[i] <- as.double(sunsgames$makes[i] * sunsgames$point[i])
+}
+
+```
+
+```{r}
+
+filterOut <- sunsgames[1:14636,]
+threePointers <- filterOut %>% filter(point == 3 & Y_LOC < 325)
+twoPointers <- filterOut %>% filter(point == 2)
+
+x1Three <- threePointers$X_LOC
+x2Three <- threePointers$Y_LOC
+yThree <- threePointers$pointsPerShot
+
+x1Two <- twoPointers$X_LOC
+x2Two <- twoPointers$Y_LOC
+yTwo <- twoPointers$pointsPerShot
+
+#put the if .. 
+rbf.k <- function(x,y,sigma)
+  return(exp(-1/(2*sigma^2)*(sum((x-y)^2))))
+
+gpreg <- function(x, y, lam, sig, design) {
+  # Evaluates mean and covariance of GP at grid of points on [0,1]
+  # Inputs:
+  # x, y: input and output values of data set
+  # lam: smoothing parameter in RBF kernel
+  # sig: error standard deviation of y
+  # design: grid of points to evaluate the GP
+  # Returns:
+  # mean=posterior mean, vars=posterior variance, and design=evaluation points
+  n <- length(y)
+  Sigma <- matrix(0,nrow=n+nrow(design), ncol=n+nrow(design))
+  
+  all <- rbind(x, design)
+  for (i in 1:nrow(Sigma)) {
+    for (j in i:nrow(Sigma))
+      # if ((y < 100 & (x >220 | x < -220)) | (y>=100 & (sqrt(y^2 + x^2) > 237))
+      # then 3 pointer else 2 pointer
+      
+      Sigma[i,j] <- rbf.k(all[i,], all[j,], lam) -> Sigma[j,i]
+  }
+  S11 <- Sigma[1:n, 1:n]
+  print(S11)
+  S12 <- Sigma[1:n, (n+1):ncol(Sigma)]
+  S21 <- Sigma[(n+1):ncol(Sigma), 1:n]
+  S22 <- Sigma[(n+1):ncol(Sigma),(n+1):ncol(Sigma)]
+  inv <- S21%*%solve(S11+sig^2*diag(n))
+  mean <- inv%*%y
+  cov <- S22-inv%*%S12
+  vars <- diag(cov)
+  return(list(mean=mean, vars=vars))
+}
+
+
+
+grid.a <- seq(-250,250,10)
+grid.b <- seq(-10,350,10)
+grid <- c()
+grid.2 <- c()
+grid.3 <- c()
+p <- 0
+for (i in 1:length(grid.a)) {
+  for (j in 1:length(grid.b)) {
+    #if three pointer
+    if ((grid.b[j] < 100 & (grid.a[i] >220 | grid.a[i] < -220)) | (grid.b[j]>=100 &       (sqrt(grid.b[j]^2 + grid.a[i]^2) > 237))){
+    grid.3 <- rbind(grid.3, c(grid.a[i], grid.b[j]))
+    
+    }
+    else{
+    grid.2 <- rbind(grid.2, c(grid.a[i], grid.b[j]))
+    
+    }
+  }
+}
+
+
+
+
+
+#code that really does the work
+start.time <- Sys.time()
+
+xTwo <- cbind(x1Two,x2Two)
+xThree <- cbind(x1Three, x2Three)
+
+fit.2 <- gpreg(xTwo, yTwo, lam=47, sig=.5, design=grid.2)
+fit.3 <- gpreg(xThree, yThree, lam=47, sig=.5, design=grid.3)
+
+end.time <- Sys.time()
+timeElapsed <- end.time-start.time
+
+k <- 1
+p <- 1
+mean.fit <- matrix(0, nrow=length(grid.a), ncol=length(grid.b))
+for (i in 1:length(grid.a)) {
+  for (j in 1:length(grid.b)) {
+    #We will have fit.2 and fit.3 and Ill need to check which of those fits has the means estimate for that point
+    #Does grid.2 have this point? and if it does then grab fit.2$mean at that point
+    if ((grid.b[j] < 100 & (grid.a[i] >220 | grid.a[i] < -220)) | (grid.b[j]>=100 &       (sqrt(grid.b[j]^2 + grid.a[i]^2) > 237))){
+      mean.fit[i,j] <- fit.3$mean[k]
+       k <- k + 1
+    }
+      else{
+       mean.fit[i,j] <- fit.2$mean[p]
+       p <- p + 1
+      }
+  }
+}
+
+
+#Show the findings!
+#library(fields)
+colorTable<- designer.colors(20, c( "blue","lightblue", "pink"  ,"red") )
+
+plot(x1, x2)
+persp(grid.a, grid.b, mean.fit, theta=30, phi=60)
+image(grid.a, grid.b, mean.fit, col = colorTable)
+timeElapsed
+
+image.plot(grid.a, grid.b, mean.fit, col = colorTable)
+mean.fit
+
+#Do not allow for negatives
+h <- mean.fit
+noZeroFit <- ifelse(h < 0, 0, h)
+image.plot(grid.a, grid.b, noZeroFit, col = colorTable)
+persp(grid.a, grid.b, noZeroFit, theta=30, phi=60)
+
+
+```
+
