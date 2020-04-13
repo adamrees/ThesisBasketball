@@ -68,7 +68,7 @@ yLocs <- sort(unique(sunsgames$Y_LOC))
 sunsgames %>% arrange(X_LOC, Y_LOC)
 sunsgames <- sunsgames %>% distinct(X_LOC, Y_LOC, .keep_all = TRUE) %>% arrange(X_LOC, Y_LOC)
 
-
+sunsgames
 
 ```
 
@@ -102,16 +102,12 @@ covGen <- function(xLoc, yLoc, lam) {
   }
   
   for (i in 1:nrow(Sigma)) {
-    for (j in i:nrow(Sigma))
+    for (j in i:nrow(Sigma)){
+      #This is where we will distinguish if it is a 2 or 3, if they are different then 0
     Sigma[i, j] <- rbf.k(all[i,], all[j,], lam) -> Sigma[j, i]
+    }
   }
   
-  S11 <- Sigma
-  S12 <- Sigma
-  S21 <- Sigma
-  S22 <- Sigma
-  
-  Sigma <- data_frame(S11, S12, S21, S22)
   return(Sigma)
 }
 
@@ -134,23 +130,23 @@ for (i in 1:length(xLocs)) {
     }
   }
 }
-  finalVector <- data.frame(xLocs, yLocs, tempY, tempSig)
+  
+  finalVector <- data.frame(tempY, tempSig)
   return(finalVector)
 }
 
 #Another function doing the last stuff of greg
 
 #sig shows up, how many shots at the grid point 
-finalFunction <- function(S11, S12, S21, S22, y, sig){
+finalFunction <- function(Sigma, y, sig){
   
-  n <- length(y)
-  
+
   # sig would be an n length vector
-  inv <- S21%*%solve(S11+sig^2*diag(n))
+  inv <- Sigma%*%solve(Sigma+diag(sig^2))
   
   #y would be, at every grid point what is the average grid point
   mean <- inv%*%y
-  cov <- S22-inv%*%S12
+  cov <- Sigma-inv%*%Sigma
   vars <- diag(cov)
   return(list(mean=mean, vars=vars))
 }
@@ -179,12 +175,14 @@ yTwo <- twoPointers$pointsPerShot
 
 
 grid.a <- seq(-250,250,10)
-grid.b <- seq(-31.6874,295.7334,10.5656)
+grid.b <- yLocs
 
 
-#a <- covGen(grid.a, grid.b, lam = .47)
-#b <- yVals(grid.a, grid.b, sunsgames)
-#c <- finalFunction(a$S11, a$S12, a$S21, a$S22, b$tempY, b$tempSig)
+a <- covGen(grid.a, grid.b, lam = 47)
+b <- yVals(grid.a, grid.b, sunsgames)
+
+c <- finalFunction(a, b$tempY, b$tempSig)
+c$mean
   
 #yVals <- function(xLocs, yLocs, data) {
 #finalFunction <- function(S11, S12, S21, S22, y, sig){
@@ -241,6 +239,27 @@ for (i in 1:length(grid.a)) {
   }
 }
 
+
+
+
+k <- 1
+mean.fit <- matrix(0, nrow = length(grid.a), ncol = length(grid.b))
+for (i in 1:length(grid.a)) {
+  for (j in 1:length(grid.b)) {
+    mean.fit[i, j] <- c$mean[k]
+    k <- k + 1
+  }
+  
+  
+  
+}
+
+
+
+
+
+
+
 plot(sunsgames$X_LOC, sunsgames$Y_LOC)
 
 
@@ -261,6 +280,10 @@ h <- mean.fit
 noZeroFit <- ifelse(h < 0, 0, h)
 image.plot(grid.a, grid.b, noZeroFit, col = colorTable)
 persp(grid.a, grid.b, noZeroFit, theta=30, phi=60)
+
+
+image.plot(grid.a, grid.b, mean.fit, col = colorTable)
+
 
 ```
 
