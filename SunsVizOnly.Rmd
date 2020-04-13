@@ -33,22 +33,132 @@ library(rapportools)
 ```{r}
 sunsgames <- read.csv("~/Desktop/Thesis/ThesisBasketball/sunsgames.csv")
 
+sunsgames <- sunsgames %>% filter(sunsgames$point != 1)
+
 sunsgames$pointsPerShot <- NULL
 sunsgames$X_LOC <- NULL
 sunsgames$Y_LOC <- NULL
+sunsgames$shootingTeam <- NULL
+
 for(i in 1:nrow(sunsgames)){
-  sunsgames$X_LOC[i] <- as.double(sunsgames$baseline[i] * 500)
+  sunsgames$X_LOC[i] <- -1 * as.double(sunsgames$baseline[i] * 500)
   sunsgames$Y_LOC[i] <- as.double(sunsgames$sideline[i] * 940)
   sunsgames$pointsPerShot[i] <- as.double(sunsgames$makes[i] * sunsgames$point[i])
+
 }
 
+sunsgames <- sunsgames %>% filter(sunsgames$Y_LOC < 296)
+
 ```
+
+
+```{r}
+x1 <- sort(unique(sunsgames$X_LOC))[1:10]
+x2 <- sort(unique(sunsgames$Y_LOC))[1:10]
+
+covGen(x1, x2, .47)
+
+
+xLoc <- x1
+yLoc <- x2
+lam <- .47
+covGen <- function(xLoc, yLoc, lam) {
+  # Evaluates mean and covariance of GP at grid of points on [0,1]
+  # Inputs:
+  # x, y: input and output values of data set
+  # lam: smoothing parameter in RBF kernel
+  # sig: error standard deviation of y
+  # design: grid of points to evaluate the GP
+  # Returns:
+  # mean=posterior mean, vars=posterior variance, and design=evaluation points
+  n <- length(xLoc)*length(yLoc)
+  Sigma <- matrix(0,nrow=n, ncol=n)
+  
+  all <- matrix(0, nrow= n, ncol = 2)
+  k <- 1
+  for(i in 1:length(xLoc)){
+    for(j in 1:length(yLoc)){
+      all[k,] <- c(xLoc[i], yLoc[j]) 
+      k <- k + 1 
+    }
+  }
+
+  for (i in 1:nrow(Sigma)) {
+    for (j in i:nrow(Sigma))
+      Sigma[i,j] <- rbf.k(all[i,], all[j,], lam) -> Sigma[j,i]
+  }
+  S11 <- Sigma
+  S12 <- Sigma
+  S21 <- Sigma
+  S22 <- Sigma
+  
+  Sigma <- c(S11, S12, S21, S22)
+  return(Sigma)
+}
+
+
+#Next function goes right here
+```
+
+
+```{r}
+#The following code is so that we can get n, ppsAve for each location
+nvalues <- sunsgames %>% group_by(X_LOC, Y_LOC) %>% count() 
+dupShots <- sunsgames %>% left_join(nvalues)
+
+sumShots <- dupShots %>% group_by(X_LOC, Y_LOC) %>% mutate(pps = sum(pointsPerShot))
+
+#Now you have the pps for each location
+sunsgames$n <- sumShots$n
+sunsgames$ppsAve <- sumShots$pps/sumShots$n
+
+# All of the different locations we will be dealing with
+xLocs <- sort(unique(sunsgames$X_LOC))
+yLocs <- sort(unique(sunsgames$Y_LOC))
+
+
+sunsgames %>% arrange(X_LOC, Y_LOC)
+sunsgames <- sunsgames %>% distinct(X_LOC, Y_LOC, .keep_all = TRUE) %>% arrange(X_LOC, Y_LOC)
+
+
+tempY <- c()
+tempSig <- c()
+counter <- 1
+
+for(i in 1:length(xLocs)){
+  for(j in 1:length(yLocs)){
+    if(!is.na(sunsgames$X_LOC[counter]) & sunsgames$X_LOC[counter] == xLocs[i] & sunsgames$Y_LOC[counter] == yLocs[j]){
+        tempY <- c(tempY, sunsgames$ppsAve[counter])
+        tempSig <- c(tempSig, 1/sqrt(sunsgames$n[counter]))
+        counter <- counter + 1
+    }else{
+        tempY <- c(tempY, 0)
+        tempSig <- c(tempSig, 1000)
+      }
+  }
+}
+
+
+
+
+```
+
+1632
+
+
+```{r}
+(yLocs)[1:32]
+```
+295.7334
+
+
 
 ```{r}
 
 filterOut <- sunsgames[1:14636,]
-threePointers <- filterOut %>% filter(point == 3 & Y_LOC < 325)
-twoPointers <- filterOut %>% filter(point == 2)
+threePointers <- filterOut %>% filter(point == 3 & Y_LOC < 300 & shooter == 5473)
+twoPointers <- filterOut %>% filter(point == 2 & shooter == 5473)
+
 
 x1Three <- threePointers$X_LOC
 x2Three <- threePointers$Y_LOC
@@ -87,7 +197,11 @@ gpreg <- function(x, y, lam, sig, design) {
   S12 <- Sigma[1:n, (n+1):ncol(Sigma)]
   S21 <- Sigma[(n+1):ncol(Sigma), 1:n]
   S22 <- Sigma[(n+1):ncol(Sigma),(n+1):ncol(Sigma)]
+  #sig shows up, how many shots at the grid point 
+  # sig would be an n length vector
   inv <- S21%*%solve(S11+sig^2*diag(n))
+  
+  #y would be, at every grid point what is the average grid point
   mean <- inv%*%y
   cov <- S22-inv%*%S12
   vars <- diag(cov)
@@ -150,18 +264,20 @@ for (i in 1:length(grid.a)) {
   }
 }
 
+plot(sunsgames$X_LOC, sunsgames$Y_LOC)
+
 
 #Show the findings!
-#library(fields)
-colorTable<- designer.colors(20, c( "blue","lightblue", "pink"  ,"red") )
+library(fields)
+colorTable<- designer.colors(30, c( "blue","lightblue", "pink"  ,"red") )
 
-plot(x1, x2)
+
 persp(grid.a, grid.b, mean.fit, theta=30, phi=60)
 image(grid.a, grid.b, mean.fit, col = colorTable)
 timeElapsed
 
 image.plot(grid.a, grid.b, mean.fit, col = colorTable)
-mean.fit
+#mean.fit
 
 #Do not allow for negatives
 h <- mean.fit
@@ -169,6 +285,26 @@ noZeroFit <- ifelse(h < 0, 0, h)
 image.plot(grid.a, grid.b, noZeroFit, col = colorTable)
 persp(grid.a, grid.b, noZeroFit, theta=30, phi=60)
 
-
 ```
 
+
+
+
+
+
+
+
+for(i in 1:nrow(sunsgames)){
+  if(sunsgames$X_LOC[i] == xLocs[counter] & sunsgames$Y_LOC[i] == yLocs[counter]){
+    tempY[i] <- sunsgames$ppsAve[i]
+    tempSig[i] <- 1/sqrt(sunsgames$n[i])
+  }
+  else{
+    tempY[i] <- 0
+    tempSig[i] <- 1000
+    counter <- counter + 1
+  }
+}
+
+
+  #sunsgames$shootingTeam[i] <- ifelse((sunsgames$home.shot[i] == TRUE & sunsgames$home.team[i] == 'PHX') | (sunsgames$home.shot[i] == FALSE & sunsgames$away.team[i] == 'PHX'), TRUE, FALSE)
