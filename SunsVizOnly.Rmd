@@ -29,7 +29,7 @@ library(rapportools)
 ```
 
 
-#Things needed for this dataset to work - side of basket shot was taken at
+#First, get the whole dataset up and running
 ```{r}
 sunsgames <- read.csv("~/Desktop/Thesis/ThesisBasketball/sunsgames.csv")
 
@@ -89,64 +89,71 @@ covGen <- function(xLoc, yLoc, lam) {
   # design: grid of points to evaluate the GP
   # Returns:
   # mean=posterior mean, vars=posterior variance, and design=evaluation points
-  n <- length(xLoc)*length(yLoc)
-  Sigma <- matrix(0,nrow=n, ncol=n)
-  
-  all <- matrix(0, nrow= n, ncol = 2)
+  n <- length(xLoc) * length(yLoc)
+  Sigma <- matrix(0, nrow = n, ncol = n)
+  all <- matrix(0, nrow = n, ncol = 2)
   k <- 1
-  for(i in 1:length(xLoc)){
-    for(j in 1:length(yLoc)){
-      all[k,] <- c(xLoc[i], yLoc[j]) 
-      k <- k + 1 
+  
+  for (i in 1:length(xLoc)) {
+    for (j in 1:length(yLoc)) {
+    all[k, ] <- c(xLoc[i], yLoc[j])
+    k <- k + 1
     }
   }
-
+  
   for (i in 1:nrow(Sigma)) {
     for (j in i:nrow(Sigma))
-      Sigma[i,j] <- rbf.k(all[i,], all[j,], lam) -> Sigma[j,i]
+    Sigma[i, j] <- rbf.k(all[i,], all[j,], lam) -> Sigma[j, i]
   }
+  
   S11 <- Sigma
   S12 <- Sigma
   S21 <- Sigma
   S22 <- Sigma
   
-  Sigma <- c(S11, S12, S21, S22)
+  Sigma <- data_frame(S11, S12, S21, S22)
   return(Sigma)
 }
 
-#yVals(grid.a, grid.b, sunsgames)
-
-#Next function goes right here
-
-data <- sunsgames
-yVals <- function(xLocs, yLocs, data){
-  
+#Find the pps and the sigma at every location
+yVals <- function(xLocs, yLocs, data) {
   counter <- 1
   tempY <- c()
   tempSig <- c()
-  
-  for(i in 1:length(xLocs)){
-  for(j in 1:length(yLocs)){
-    if(!is.na(data$X_LOC[counter]) & data$X_LOC[counter] == xLocs[i] & data$Y_LOC[counter] == yLocs[j]){
-        tempY <- c(tempY, data$ppsAve[counter])
-        tempSig <- c(tempSig, 1/sqrt(data$n[counter]))
-        counter <- counter + 1
-    }else{
-        tempY <- c(tempY, 0)
-        tempSig <- c(tempSig, 1000)
-      }
+
+for (i in 1:length(xLocs)) {
+  for (j in 1:length(yLocs)) {
+    if (!is.na(data$X_LOC[counter]) &
+        data$X_LOC[counter] == xLocs[i] & data$Y_LOC[counter] == yLocs[j]) {
+      tempY <- c(tempY, data$ppsAve[counter])
+      tempSig <- c(tempSig, 1 / sqrt(data$n[counter]))
+      counter <- counter + 1
+    } else{
+      tempY <- c(tempY, 0)
+      tempSig <- c(tempSig, 1000)
+    }
   }
-  }
-  
- 
+}
   finalVector <- data.frame(xLocs, yLocs, tempY, tempSig)
-  
   return(finalVector)
-  
 }
 
-#One last function
+#Another function doing the last stuff of greg
 
+#sig shows up, how many shots at the grid point 
+finalFunction <- function(S11, S12, S21, S22, y, sig){
+  
+  n <- length(y)
+  
+  # sig would be an n length vector
+  inv <- S21%*%solve(S11+sig^2*diag(n))
+  
+  #y would be, at every grid point what is the average grid point
+  mean <- inv%*%y
+  cov <- S22-inv%*%S12
+  vars <- diag(cov)
+  return(list(mean=mean, vars=vars))
+}
 
 ```
 
@@ -155,7 +162,7 @@ yVals <- function(xLocs, yLocs, data){
 
 ```{r}
 
-filterOut <- sunsgames[1:1000,]
+filterOut <- sunsgames[1:100,]
 threePointers <- filterOut %>% filter(point == 3)
 twoPointers <- filterOut %>% filter(point == 2)
 
@@ -171,11 +178,18 @@ yTwo <- twoPointers$pointsPerShot
 
 
 
-
-
-
 grid.a <- seq(-250,250,10)
 grid.b <- seq(-31.6874,295.7334,10.5656)
+
+
+#a <- covGen(grid.a, grid.b, lam = .47)
+#b <- yVals(grid.a, grid.b, sunsgames)
+#c <- finalFunction(a$S11, a$S12, a$S21, a$S22, b$tempY, b$tempSig)
+  
+#yVals <- function(xLocs, yLocs, data) {
+#finalFunction <- function(S11, S12, S21, S22, y, sig){
+
+
 
 grid <- c()
 grid.2 <- c()
