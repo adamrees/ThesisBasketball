@@ -101,15 +101,38 @@ covGen <- function(xLoc, yLoc, lam) {
     }
   }
   
+  all[i,][2]
+
   for (i in 1:nrow(Sigma)) {
     for (j in i:nrow(Sigma)){
-      #This is where we will distinguish if it is a 2 or 3, if they are different then 0
-    Sigma[i, j] <- rbf.k(all[i,], all[j,], lam) -> Sigma[j, i]
+      #If first shot is a three 
+      if ((all[i,][2] < 100 & (all[i,][1] >220 | all[i,][1] < -220)) | (all[i,][2]>=100 & (sqrt(all[i,][2]^2 + all[i,][1]^2) > 237))){
+        #second shot is a three
+        if((all[j,][2] < 100 & (all[j,][1] >220 | all[j,][1] < -220)) | (all[j,][2]>=100 & (sqrt(all[j,][2]^2 + all[j,][1]^2) > 237))){
+          Sigma[i, j] <- rbf.k(all[i,], all[j,], lam) -> Sigma[j, i]
+        }
+        #second shot is a two
+        else{
+          Sigma[i, j] <- 0 -> Sigma[j, i]
+          
+        }
+      }
+      #if first shot is a two
+      else{
+        #second shot is a three
+        if((all[j,][2] < 100 & (all[j,][1] >220 | all[j,][1] < -220)) | (all[j,][2]>=100 & (sqrt(all[j,][2]^2 + all[j,][1]^2) > 237))){
+          Sigma[i, j] <- 0 -> Sigma[j, i]
+          
+        }#second shot is a two
+        else{
+          Sigma[i, j] <- rbf.k(all[i,], all[j,], lam) -> Sigma[j, i]
+        }
+        
+      }
     }
   }
-  
-  return(Sigma)
-}
+    return(Sigma)
+  }
 
 #Find the pps and the sigma at every location
 yVals <- function(xLocs, yLocs, data) {
@@ -151,6 +174,7 @@ finalFunction <- function(Sigma, y, sig){
   return(list(mean=mean, vars=vars))
 }
 
+
 ```
 
 
@@ -158,7 +182,53 @@ finalFunction <- function(Sigma, y, sig){
 
 ```{r}
 
-filterOut <- sunsgames[1:100,]
+grid.a <- xLocs
+grid.b <- yLocs
+
+
+a <- covGen(grid.a, grid.b, lam = 47)
+b <- yVals(grid.a, grid.b, sunsgames)
+c <- finalFunction(a, b$tempY, b$tempSig)
+
+
+k <- 1
+mean.fit <- matrix(0, nrow = length(grid.a), ncol = length(grid.b))
+for (i in 1:length(grid.a)) {
+  for (j in 1:length(grid.b)) {
+    mean.fit[i, j] <- c$mean[k]
+    k <- k + 1
+  }
+}
+
+
+
+plot(sunsgames$X_LOC, sunsgames$Y_LOC)
+
+
+#Show the findings!
+library(fields)
+colorTable<- designer.colors(30, c( "blue","lightblue", "pink"  ,"red") )
+
+
+persp(grid.a, grid.b, mean.fit, theta=30, phi=60)
+image(grid.a, grid.b, mean.fit, col = colorTable)
+timeElapsed
+
+image.plot(grid.a, grid.b, mean.fit, col = colorTable)
+#mean.fit
+
+#Do not allow for negatives
+h <- mean.fit
+noZeroFit <- ifelse(h < 0, 0, h)
+image.plot(grid.a, grid.b, noZeroFit, col = colorTable)
+persp(grid.a, grid.b, noZeroFit, theta=30, phi=60)
+
+
+image.plot(grid.a, grid.b, mean.fit, col = colorTable)
+
+
+```
+
 threePointers <- filterOut %>% filter(point == 3)
 twoPointers <- filterOut %>% filter(point == 2)
 
@@ -171,21 +241,6 @@ x1Two <- twoPointers$X_LOC
 x2Two <- twoPointers$Y_LOC
 yTwo <- twoPointers$pointsPerShot
 
-
-
-
-grid.a <- seq(-250,250,10)
-grid.b <- yLocs
-
-
-a <- covGen(grid.a, grid.b, lam = 47)
-b <- yVals(grid.a, grid.b, sunsgames)
-
-c <- finalFunction(a, b$tempY, b$tempSig)
-c$mean
-  
-#yVals <- function(xLocs, yLocs, data) {
-#finalFunction <- function(S11, S12, S21, S22, y, sig){
 
 
 
@@ -206,7 +261,6 @@ for (i in 1:length(grid.a)) {
     }
   }
 }
-
 
 
 #code that really does the work
@@ -241,51 +295,6 @@ for (i in 1:length(grid.a)) {
 
 
 
-
-k <- 1
-mean.fit <- matrix(0, nrow = length(grid.a), ncol = length(grid.b))
-for (i in 1:length(grid.a)) {
-  for (j in 1:length(grid.b)) {
-    mean.fit[i, j] <- c$mean[k]
-    k <- k + 1
-  }
-  
-  
-  
-}
-
-
-
-
-
-
-
-plot(sunsgames$X_LOC, sunsgames$Y_LOC)
-
-
-#Show the findings!
-library(fields)
-colorTable<- designer.colors(30, c( "blue","lightblue", "pink"  ,"red") )
-
-
-persp(grid.a, grid.b, mean.fit, theta=30, phi=60)
-image(grid.a, grid.b, mean.fit, col = colorTable)
-timeElapsed
-
-image.plot(grid.a, grid.b, mean.fit, col = colorTable)
-#mean.fit
-
-#Do not allow for negatives
-h <- mean.fit
-noZeroFit <- ifelse(h < 0, 0, h)
-image.plot(grid.a, grid.b, noZeroFit, col = colorTable)
-persp(grid.a, grid.b, noZeroFit, theta=30, phi=60)
-
-
-image.plot(grid.a, grid.b, mean.fit, col = colorTable)
-
-
-```
 
 
 
@@ -375,3 +384,12 @@ for(i in 1:nrow(sunsgames)){
 
 
   #sunsgames$shootingTeam[i] <- ifelse((sunsgames$home.shot[i] == TRUE & sunsgames$home.team[i] == 'PHX') | (sunsgames$home.shot[i] == FALSE & sunsgames$away.team[i] == 'PHX'), TRUE, FALSE)
+
+
+
+
+if(y < 100 & (x >220 | x < -220)) | (y>=100 & (y^2 + x^2) > 237)){
+
+((y < 100 & (x >220 | x < -220)) | (y>=100 & (sqrt(y^2 + x^2) > 237)))
+
+
