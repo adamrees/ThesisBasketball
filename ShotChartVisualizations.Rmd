@@ -1,0 +1,406 @@
+---
+title: "SunsVizOnly"
+author: "Adam Rees"
+date: "3/26/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(rvest)
+library(dplyr)
+require(XML)
+require(RCurl)
+require(stringr)
+require(png)
+library(XML)
+library(tidyr)
+library(MASS)
+library(sp)
+library(gstat)
+
+
+library(rapportools)
+
+```
+
+
+#First, get the whole dataset up and running
+```{r}
+gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalSunsGames.csv")
+
+
+gameData <- gameData %>% filter(gameData$point != 1, gameData$shootingTeam == "PHX")
+
+
+gameData$pointsPerShot <- NULL
+gameData$X_LOC <- NULL
+gameData$Y_LOC <- NULL
+#gameData$shootingTeam <- NULL
+
+for(i in 1:nrow(gameData)){
+  gameData$X_LOC[i] <- -1 * as.double(gameData$baseline[i] * 500)
+  gameData$Y_LOC[i] <- as.double(gameData$sideline[i] * 940)
+  gameData$pointsPerShot[i] <- as.double(gameData$makes[i] * gameData$point[i])
+
+}
+
+gameData <- gameData %>% filter(gameData$Y_LOC < 296)
+
+
+#The following code is so that we can get n, ppsAve for each location
+nvalues <- gameData %>% group_by(X_LOC, Y_LOC) %>% count() 
+dupShots <- gameData %>% left_join(nvalues)
+
+sumShots <- dupShots %>% group_by(X_LOC, Y_LOC) %>% mutate(pps = sum(pointsPerShot))
+
+#Now you have the pps for each location
+gameData$n <- sumShots$n
+gameData$ppsAve <- sumShots$pps/sumShots$n
+
+# All of the different locations we will be dealing with
+xLocs <- sort(unique(gameData$X_LOC))
+yLocs <- sort(unique(gameData$Y_LOC))
+
+
+gameData %>% arrange(X_LOC, Y_LOC)
+gameData <- gameData %>% distinct(X_LOC, Y_LOC, .keep_all = TRUE) %>% arrange(X_LOC, Y_LOC)
+
+gameData
+
+```
+
+
+```{r}
+
+#put the if .. 
+rbf.k <- function(x,y,sigma)
+  return(exp(-1/(2*sigma^2)*(sum((x-y)^2))))
+
+
+covGen <- function(xLoc, yLoc, lam) {
+  # Evaluates mean and covariance of GP at grid of points on [0,1]
+  # Inputs:
+  # x, y: input and output values of data set
+  # lam: smoothing parameter in RBF kernel
+  # sig: error standard deviation of y
+  # design: grid of points to evaluate the GP
+  # Returns:
+  # mean=posterior mean, vars=posterior variance, and design=evaluation points
+  n <- length(xLoc) * length(yLoc)
+  Sigma <- matrix(0, nrow = n, ncol = n)
+  all <- matrix(0, nrow = n, ncol = 2)
+  k <- 1
+  
+  for (i in 1:length(xLoc)) {
+    for (j in 1:length(yLoc)) {
+    all[k, ] <- c(xLoc[i], yLoc[j])
+    k <- k + 1
+    }
+  }
+  
+  all[i,][2]
+
+  for (i in 1:nrow(Sigma)) {
+    for (j in i:nrow(Sigma)){
+      #If first shot is a three 
+      if ((all[i,][2] < 100 & (all[i,][1] >220 | all[i,][1] < -220)) | (all[i,][2]>=100 & (sqrt(all[i,][2]^2 + all[i,][1]^2) > 237))){
+        #second shot is a three
+        if((all[j,][2] < 100 & (all[j,][1] >220 | all[j,][1] < -220)) | (all[j,][2]>=100 & (sqrt(all[j,][2]^2 + all[j,][1]^2) > 237))){
+          Sigma[i, j] <- rbf.k(all[i,], all[j,], lam) -> Sigma[j, i]
+        }
+        #second shot is a two
+        else{
+          Sigma[i, j] <- 0 -> Sigma[j, i]
+          
+        }
+      }
+      #if first shot is a two
+      else{
+        #second shot is a three
+        if((all[j,][2] < 100 & (all[j,][1] >220 | all[j,][1] < -220)) | (all[j,][2]>=100 & (sqrt(all[j,][2]^2 + all[j,][1]^2) > 237))){
+          Sigma[i, j] <- 0 -> Sigma[j, i]
+          
+        }#second shot is a two
+        else{
+          Sigma[i, j] <- rbf.k(all[i,], all[j,], lam) -> Sigma[j, i]
+        }
+        
+      }
+    }
+  }
+    return(Sigma)
+  }
+
+#Find the pps and the sigma at every location
+yVals <- function(xLocs, yLocs, data) {
+  counter <- 1
+  tempY <- c()
+  tempSig <- c()
+
+for (i in 1:length(xLocs)) {
+  for (j in 1:length(yLocs)) {
+    if (!is.na(data$X_LOC[counter]) &
+        data$X_LOC[counter] == xLocs[i] & data$Y_LOC[counter] == yLocs[j]) {
+      tempY <- c(tempY, data$ppsAve[counter])
+      tempSig <- c(tempSig, 1 / sqrt(data$n[counter]))
+      counter <- counter + 1
+    } else{
+      tempY <- c(tempY, 0)
+      tempSig <- c(tempSig, 1000)
+    }
+  }
+}
+  
+  finalVector <- data.frame(tempY, tempSig)
+  return(finalVector)
+}
+
+#Another function doing the last stuff of greg
+
+#sig shows up, how many shots at the grid point 
+finalFunction <- function(Sigma, y, sig){
+  
+
+  # sig would be an n length vector
+  inv <- Sigma%*%solve(Sigma+diag(sig^2))
+  
+  #y would be, at every grid point what is the average grid point
+  mean <- inv%*%y
+  cov <- Sigma-inv%*%Sigma
+  vars <- diag(cov)
+  return(list(mean=mean, vars=vars))
+}
+
+
+```
+
+
+```{r}
+a <- covGen(grid.a, grid.b, lam = 47)
+```
+
+
+```{r}
+
+grid.a <- xLocs
+grid.b <- yLocs
+
+
+b <- yVals(grid.a, grid.b, gameData)
+c <- finalFunction(a, b$tempY, b$tempSig)
+
+
+k <- 1
+mean.fit <- matrix(0, nrow = length(grid.a), ncol = length(grid.b))
+for (i in 1:length(grid.a)) {
+  for (j in 1:length(grid.b)) {
+    mean.fit[i, j] <- c$mean[k]
+    k <- k + 1
+  }
+}
+
+
+
+plot(gameData$X_LOC, gameData$Y_LOC)
+
+
+#Show the findings!
+library(fields)
+colorTable<- designer.colors(30, c( "blue","lightblue", "pink"  ,"red") )
+
+
+persp(grid.a, grid.b, mean.fit, theta=30, phi=60)
+image(grid.a, grid.b, mean.fit, col = colorTable)
+timeElapsed
+
+image.plot(grid.a, grid.b, mean.fit, col = colorTable)
+#mean.fit
+
+#Do not allow for negatives
+h <- mean.fit
+noZeroFit <- ifelse(h < 0, 0, h)
+
+
+#png(file="saving_plot2.png",width=500, height=360)
+image.plot(grid.a, grid.b, noZeroFit, col = colorTable, main="Phoenix Suns Shots", sub="2019-2020 Season", xlab="Baseline", ylab="Sideline")
+#dev.off()
+
+
+
+persp(grid.a, grid.b, noZeroFit, theta=30, phi=60)
+
+
+image.plot(grid.a, grid.b, mean.fit, col = colorTable)
+
+
+```
+
+threePointers <- filterOut %>% filter(point == 3)
+twoPointers <- filterOut %>% filter(point == 2)
+
+
+x1Three <- threePointers$X_LOC
+x2Three <- threePointers$Y_LOC
+yThree <- threePointers$pointsPerShot
+
+x1Two <- twoPointers$X_LOC
+x2Two <- twoPointers$Y_LOC
+yTwo <- twoPointers$pointsPerShot
+
+
+
+
+grid <- c()
+grid.2 <- c()
+grid.3 <- c()
+p <- 0
+for (i in 1:length(grid.a)) {
+  for (j in 1:length(grid.b)) {
+    #if three pointer
+    if ((grid.b[j] < 100 & (grid.a[i] >220 | grid.a[i] < -220)) | (grid.b[j]>=100 &       (sqrt(grid.b[j]^2 + grid.a[i]^2) > 237))){
+    grid.3 <- rbind(grid.3, c(grid.a[i], grid.b[j]))
+    
+    }
+    else{
+    grid.2 <- rbind(grid.2, c(grid.a[i], grid.b[j]))
+    
+    }
+  }
+}
+
+
+#code that really does the work
+start.time <- Sys.time()
+
+xTwo <- cbind(x1Two,x2Two)
+xThree <- cbind(x1Three, x2Three)
+
+fit.2 <- gpreg(xTwo, yTwo, lam=47, sig=.5, design=grid.2)
+fit.3 <- gpreg(xThree, yThree, lam=47, sig=.5, design=grid.3)
+
+end.time <- Sys.time()
+timeElapsed <- end.time-start.time
+
+k <- 1
+p <- 1
+mean.fit <- matrix(0, nrow=length(grid.a), ncol=length(grid.b))
+for (i in 1:length(grid.a)) {
+  for (j in 1:length(grid.b)) {
+    #We will have fit.2 and fit.3 and Ill need to check which of those fits has the means estimate for that point
+    #Does grid.2 have this point? and if it does then grab fit.2$mean at that point
+    if ((grid.b[j] < 100 & (grid.a[i] >220 | grid.a[i] < -220)) | (grid.b[j]>=100 &       (sqrt(grid.b[j]^2 + grid.a[i]^2) > 237))){
+      mean.fit[i,j] <- fit.3$mean[k]
+       k <- k + 1
+    }
+      else{
+       mean.fit[i,j] <- fit.2$mean[p]
+       p <- p + 1
+      }
+  }
+}
+
+
+
+
+
+
+#Most important 
+
+
+gpreg <- function(x, y, lam, sig, design) {
+  # Evaluates mean and covariance of GP at grid of points on [0,1]
+  # Inputs:
+  # x, y: input and output values of data set
+  # lam: smoothing parameter in RBF kernel
+  # sig: error standard deviation of y
+  # design: grid of points to evaluate the GP
+  # Returns:
+  # mean=posterior mean, vars=posterior variance, and design=evaluation points
+  n <- length(y)
+  Sigma <- matrix(0,nrow=n+nrow(design), ncol=n+nrow(design))
+  
+  all <- rbind(x, design)
+  for (i in 1:nrow(Sigma)) {
+    for (j in i:nrow(Sigma))
+      # if ((y < 100 & (x >220 | x < -220)) | (y>=100 & (sqrt(y^2 + x^2) > 237))
+      # then 3 pointer else 2 pointer
+      
+      Sigma[i,j] <- rbf.k(all[i,], all[j,], lam) -> Sigma[j,i]
+  }
+  S11 <- Sigma[1:n, 1:n]
+  print(S11)
+  S12 <- Sigma[1:n, (n+1):ncol(Sigma)]
+  S21 <- Sigma[(n+1):ncol(Sigma), 1:n]
+  S22 <- Sigma[(n+1):ncol(Sigma),(n+1):ncol(Sigma)]
+  #sig shows up, how many shots at the grid point 
+  # sig would be an n length vector
+  inv <- S21%*%solve(S11+sig^2*diag(n))
+  
+  #y would be, at every grid point what is the average grid point
+  mean <- inv%*%y
+  cov <- S22-inv%*%S12
+  vars <- diag(cov)
+  return(list(mean=mean, vars=vars))
+}
+
+
+#Most Important ^
+
+
+
+
+
+
+
+
+
+
+tempY <- c()
+tempSig <- c()
+counter <- 1
+
+for(i in 1:length(xLocs)){
+  for(j in 1:length(yLocs)){
+    if(!is.na(gameData$X_LOC[counter]) & gameData$X_LOC[counter] == xLocs[i] & gameData$Y_LOC[counter] == yLocs[j]){
+        tempY <- c(tempY, gameData$ppsAve[counter])
+        tempSig <- c(tempSig, 1/sqrt(gameData$n[counter]))
+        counter <- counter + 1
+    }else{
+        tempY <- c(tempY, 0)
+        tempSig <- c(tempSig, 1000)
+      }
+  }
+}
+
+
+
+
+
+for(i in 1:nrow(gameData)){
+  if(gameData$X_LOC[i] == xLocs[counter] & gameData$Y_LOC[i] == yLocs[counter]){
+    tempY[i] <- gameData$ppsAve[i]
+    tempSig[i] <- 1/sqrt(gameData$n[i])
+  }
+  else{
+    tempY[i] <- 0
+    tempSig[i] <- 1000
+    counter <- counter + 1
+  }
+}
+
+
+  #gameData$shootingTeam[i] <- ifelse((gameData$home.shot[i] == TRUE & gameData$home.team[i] == 'PHX') | (gameData$home.shot[i] == FALSE & gameData$away.team[i] == 'PHX'), TRUE, FALSE)
+
+
+
+
+if(y < 100 & (x >220 | x < -220)) | (y>=100 & (y^2 + x^2) > 237)){
+
+((y < 100 & (x >220 | x < -220)) | (y>=100 & (sqrt(y^2 + x^2) > 237)))
+
+
