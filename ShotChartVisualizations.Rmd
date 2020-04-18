@@ -31,16 +31,16 @@ library(rapportools)
 
 #First, get the whole dataset up and running
 ```{r}
-gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalSunsGames.csv")
+gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalJazzGames.csv")
 
 
-gameData <- gameData %>% filter(gameData$point != 1, gameData$shootingTeam == "PHX")
+gameData <- gameData %>% filter(gameData$point != 1, gameData$shooter == "5826")
 
 
 gameData$pointsPerShot <- NULL
 gameData$X_LOC <- NULL
 gameData$Y_LOC <- NULL
-#gameData$shootingTeam <- NULL
+
 
 for(i in 1:nrow(gameData)){
   gameData$X_LOC[i] <- -1 * as.double(gameData$baseline[i] * 500)
@@ -181,7 +181,7 @@ finalFunction <- function(Sigma, y, sig){
 
 
 ```{r}
-a <- covGen(grid.a, grid.b, lam = 47)
+
 ```
 
 
@@ -190,7 +190,7 @@ a <- covGen(grid.a, grid.b, lam = 47)
 grid.a <- xLocs
 grid.b <- yLocs
 
-
+a <- covGen(grid.a, grid.b, lam = 47)
 b <- yVals(grid.a, grid.b, gameData)
 c <- finalFunction(a, b$tempY, b$tempSig)
 
@@ -226,9 +226,9 @@ h <- mean.fit
 noZeroFit <- ifelse(h < 0, 0, h)
 
 
-#png(file="saving_plot2.png",width=500, height=360)
-image.plot(grid.a, grid.b, noZeroFit, col = colorTable, main="Phoenix Suns Shots", sub="2019-2020 Season", xlab="Baseline", ylab="Sideline")
-#dev.off()
+png(file="DonovanMitchell.png",width=500, height=360)
+image.plot(grid.a, grid.b, noZeroFit, col = colorTable, main="Donavon Mitchell", sub="FG%: 45.3%, FG3%: 36.4, eFG%: 51.7", xlab="2019-2020 Stats:", ylab="")
+dev.off()
 
 
 
