@@ -28,15 +28,38 @@ library(rapportools)
 
 ```
 
-
+5958
 #First, get the whole dataset up and running
 ```{r}
-gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalJazzGames.csv")
+gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalSunsGames.csv")
+gameData <- gameData %>% filter(gameData$point != 1)
+
+```
+
+#Run *if* you are doing a randomization test for one player
+```{r}
+gameData <- gameData %>% filter(gameData$shootingTeam != "PHX")
+gameData$playerDefending <- NULL
+defendingPlayer <- "5958"
 
 
-gameData <- gameData %>% filter(gameData$point != 1, gameData$shooter == "5826")
+gameData$playerDefending <- ifelse((gameData$shootingTeam != "PHX" &
+                                 (gameData$H1 == defendingPlayer | 
+                                  gameData$H2 == defendingPlayer |
+                                  gameData$H3 == defendingPlayer |
+                                  gameData$H4 == defendingPlayer |
+                                  gameData$H5 == defendingPlayer |
+                                  gameData$A1 == defendingPlayer |
+                                  gameData$A2 == defendingPlayer |
+                                  gameData$A3 == defendingPlayer |
+                                  gameData$A4 == defendingPlayer |
+                                  gameData$A5 == defendingPlayer)), TRUE, FALSE)s
 
+gameData <- gameData %>% filter(gameData$playerDefending == FALSE)
+```
 
+#Get the rest of the dataset up and running
+```{r}
 gameData$pointsPerShot <- NULL
 gameData$X_LOC <- NULL
 gameData$Y_LOC <- NULL
@@ -49,7 +72,8 @@ for(i in 1:nrow(gameData)){
 
 }
 
-gameData <- gameData %>% filter(gameData$Y_LOC < 296)
+#If you just want shots at the basket
+gameData <- gameData %>% filter(gameData$X_LOC >= -50, gameData$X_LOC <= 50, gameData$Y_LOC <= 50)
 
 
 #The following code is so that we can get n, ppsAve for each location
@@ -70,11 +94,10 @@ yLocs <- sort(unique(gameData$Y_LOC))
 gameData %>% arrange(X_LOC, Y_LOC)
 gameData <- gameData %>% distinct(X_LOC, Y_LOC, .keep_all = TRUE) %>% arrange(X_LOC, Y_LOC)
 
-gameData
-
 ```
 
 
+#The functions to run the code
 ```{r}
 
 #put the if .. 
@@ -180,11 +203,7 @@ finalFunction <- function(Sigma, y, sig){
 ```
 
 
-```{r}
-
-```
-
-
+#Estimate visualizations
 ```{r}
 
 grid.a <- xLocs
@@ -239,6 +258,67 @@ image.plot(grid.a, grid.b, mean.fit, col = colorTable)
 
 
 ```
+
+
+#Randomization Test
+```{r}
+#Seperate into 2 different estimates - estimated pps when the player is in vs. when the player is not in
+
+p1 <- mean.fit
+p2 <- mean.fit
+
+p1
+checkVal<- sum(abs(p1 - p2))
+
+
+
+store <- c()
+reps <- 1000
+
+
+for(i in 1:reps){
+  x <- sample_n(fullData, size = nrow(fullData))
+  a <- x[1:shotsInQTR + 0,]
+  b <- x[478: 8493,]
+  
+  
+  randomOne <- kde2d(a$X_LOC, a$Y_LOC, lims = c(-250, 250, -20, 375))
+  randomTwo <- kde2d(b$X_LOC, b$Y_LOC, lims = c(-250, 250, -20, 375))
+
+  
+  value <- sum(abs(randomOne$z - randomTwo$z))
+  store <- c(store, value)
+  
+}
+
+
+mean(store > checkVal)
+
+
+```
+
+```{r}
+p2
+```
+
+
+
+
+gameData$playerDefending[i] <- ifelse((gameData$shootingTeam != "PHX" &
+                                 (gameData$H1[i] == defendingPlayer | 
+                                  gameData$H2[i] == defendingPlayer |
+                                  gameData$H3[i] == defendingPlayer |
+                                  gameData$H4[i] == defendingPlayer |
+                                  gameData$H5[i] == defendingPlayer |
+                                  gameData$A1[i] == defendingPlayer |
+                                  gameData$A2[i] == defendingPlayer |
+                                  gameData$A3[i] == defendingPlayer |
+                                  gameData$A4[i] == defendingPlayer |
+                                  gameData$A5[i] == defendingPlayer)), TRUE, FALSE)
+
+
+
+
 
 threePointers <- filterOut %>% filter(point == 3)
 twoPointers <- filterOut %>% filter(point == 2)
