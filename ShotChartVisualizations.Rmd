@@ -38,25 +38,9 @@ gameData <- gameData %>% filter(gameData$point != 1)
 
 #Run *if* you are doing a randomization test for one player
 ```{r}
-gameData <- gameData %>% filter(gameData$shootingTeam != "PHX")
-gameData$playerDefending <- NULL
-defendingPlayer <- "5958"
 
-
-gameData$playerDefending <- ifelse((gameData$shootingTeam != "PHX" &
-                                 (gameData$H1 == defendingPlayer | 
-                                  gameData$H2 == defendingPlayer |
-                                  gameData$H3 == defendingPlayer |
-                                  gameData$H4 == defendingPlayer |
-                                  gameData$H5 == defendingPlayer |
-                                  gameData$A1 == defendingPlayer |
-                                  gameData$A2 == defendingPlayer |
-                                  gameData$A3 == defendingPlayer |
-                                  gameData$A4 == defendingPlayer |
-                                  gameData$A5 == defendingPlayer)), TRUE, FALSE)s
-
-gameData <- gameData %>% filter(gameData$playerDefending == FALSE)
 ```
+
 
 #Get the rest of the dataset up and running
 ```{r}
@@ -73,7 +57,7 @@ for(i in 1:nrow(gameData)){
 }
 
 #If you just want shots at the basket
-gameData <- gameData %>% filter(gameData$X_LOC >= -50, gameData$X_LOC <= 50, gameData$Y_LOC <= 50)
+gameData <- gameData %>% filter(gameData$X_LOC >= -50, gameData$X_LOC <= 50, gameData$Y_LOC <= 50, gameData$Y_LOC >= -11)
 
 
 #The following code is so that we can get n, ppsAve for each location
@@ -91,11 +75,11 @@ xLocs <- sort(unique(gameData$X_LOC))
 yLocs <- sort(unique(gameData$Y_LOC))
 
 
-gameData %>% arrange(X_LOC, Y_LOC)
+gameData <- gameData %>% arrange(X_LOC, Y_LOC)
 gameData <- gameData %>% distinct(X_LOC, Y_LOC, .keep_all = TRUE) %>% arrange(X_LOC, Y_LOC)
 
-```
 
+```
 
 #The functions to run the code
 ```{r}
@@ -202,6 +186,10 @@ finalFunction <- function(Sigma, y, sig){
 
 ```
 
+```{r}
+a <- covGen(grid.a, grid.b, lam = 47)
+```
+
 
 #Estimate visualizations
 ```{r}
@@ -209,7 +197,6 @@ finalFunction <- function(Sigma, y, sig){
 grid.a <- xLocs
 grid.b <- yLocs
 
-a <- covGen(grid.a, grid.b, lam = 47)
 b <- yVals(grid.a, grid.b, gameData)
 c <- finalFunction(a, b$tempY, b$tempSig)
 
@@ -259,34 +246,218 @@ image.plot(grid.a, grid.b, mean.fit, col = colorTable)
 
 ```
 
+```{r}
+#From when player was in
+p1 <- mean.fit
+#From when player was out
+p2 <- mean.fit
+checkVal<- sum(abs(p1 - p2))
+checkVal
+
+```
+5.321665
+
 
 #Randomization Test
+
 ```{r}
-#Seperate into 2 different estimates - estimated pps when the player is in vs. when the player is not in
 
-p1 <- mean.fit
-p2 <- mean.fit
+#Get the full dataset back
+gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalSunsGames.csv")
+gameData <- gameData %>% filter(gameData$point != 1, gameData$shootingTeam != "PHX")
 
-p1
-checkVal<- sum(abs(p1 - p2))
+gameData <- gameData %>% filter(gameData$shootingTeam != "PHX")
+gameData$playerDefending <- NULL
+defendingPlayer <- "5958"
 
+
+gameData$playerDefending <- ifelse((gameData$shootingTeam != "PHX" &
+                                 (gameData$H1 == defendingPlayer | 
+                                  gameData$H2 == defendingPlayer |
+                                  gameData$H3 == defendingPlayer |
+                                  gameData$H4 == defendingPlayer |
+                                  gameData$H5 == defendingPlayer |
+                                  gameData$A1 == defendingPlayer |
+                                  gameData$A2 == defendingPlayer |
+                                  gameData$A3 == defendingPlayer |
+                                  gameData$A4 == defendingPlayer |
+                                  gameData$A5 == defendingPlayer)), TRUE, FALSE)
+
+gameData$pointsPerShot <- NULL
+gameData$X_LOC <- NULL
+gameData$Y_LOC <- NULL
+
+for(i in 1:nrow(gameData)){
+  gameData$X_LOC[i] <- -1 * as.double(gameData$baseline[i] * 500)
+  gameData$Y_LOC[i] <- as.double(gameData$sideline[i] * 940)
+  gameData$pointsPerShot[i] <- as.double(gameData$makes[i] * gameData$point[i])
+}
+#If you just want shots at the basket
+gameData <- gameData %>% filter(gameData$X_LOC >= -50, gameData$X_LOC <= 50, gameData$Y_LOC <= 50, gameData$Y_LOC >= -11)
+
+grid.a <- sort(unique(gameData$X_LOC))
+grid.b <- sort(unique(gameData$Y_LOC))
+
+  
+  playerIn <- gameData %>% filter(gameData$playerDefending == TRUE)
+  playerOut <- gameData %>% filter(gameData$playerDefending == FALSE)
+  
+  #Restructure SAMPLE1
+  #The following code is so that we can get n, ppsAve for each location
+  nvalues <- playerIn %>% group_by(X_LOC, Y_LOC) %>% count() 
+  dupShots <- playerIn %>% left_join(nvalues)
+
+  sumShots <- dupShots %>% group_by(X_LOC, Y_LOC) %>% mutate(pps = sum(pointsPerShot))
+
+  #Now you have the pps for each location
+  playerIn$n <- sumShots$n
+  playerIn$ppsAve <- sumShots$pps/sumShots$n
+
+  playerIn <- playerIn %>% arrange(X_LOC, Y_LOC)
+  playerIn <- playerIn %>% distinct(X_LOC, Y_LOC, .keep_all = TRUE) %>% arrange(X_LOC, Y_LOC)
+  
+  
+  #Restructure SAMPLE2
+  #The following code is so that we can get n, ppsAve for each location
+  nvalues1 <- playerOut %>% group_by(X_LOC, Y_LOC) %>% count() 
+  dupShots1 <- playerOut %>% left_join(nvalues1)
+
+  sumShots1 <- dupShots1 %>% group_by(X_LOC, Y_LOC) %>% mutate(pps = sum(pointsPerShot))
+
+  #Now you have the pps for each location
+  playerOut$n <- sumShots1$n
+  playerOut$ppsAve <- sumShots1$pps/sumShots1$n
+
+  playerOut <- playerOut %>% arrange(X_LOC, Y_LOC)
+  playerOut <- playerOut %>% distinct(X_LOC, Y_LOC, .keep_all = TRUE) %>% arrange(X_LOC, Y_LOC)
+  
+  
+  a <- covGen(grid.a, grid.b, lam = 47)
+  
+  #First sample
+  b1 <- yVals(grid.a, grid.b, playerIn)
+  c1 <- finalFunction(a, b1$tempY, b1$tempSig)
+  k <- 1
+  mean.fit1 <- matrix(0, nrow = length(grid.a), ncol = length(grid.b))
+    for (i in 1:length(grid.a)) {
+      for (j in 1:length(grid.b)) {
+        mean.fit1[i, j] <- c1$mean[k]
+        k <- k + 1
+      }
+    }
+  #Second Sample
+  b2 <- yVals(grid.a, grid.b, playerOut)
+  c2 <- finalFunction(a, b2$tempY, b2$tempSig)
+  k <- 1
+  mean.fit2 <- matrix(0, nrow = length(grid.a), ncol = length(grid.b))
+    for (i in 1:length(grid.a)) {
+      for (j in 1:length(grid.b)) {
+        mean.fit2[i, j] <- c2$mean[k]
+        k <- k + 1
+      }
+    }
+
+  value <- sum((mean.fit1 - mean.fit2))
+
+  value
+```
+
+Ayton: 5.321665
+
+
+
+
+
+
+
+```{r}
+#Get the full dataset back
+gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalSunsGames.csv")
+gameData <- gameData %>% filter(gameData$point != 1, gameData$shootingTeam != "PHX")
+gameData$pointsPerShot <- NULL
+gameData$X_LOC <- NULL
+gameData$Y_LOC <- NULL
+
+for(i in 1:nrow(gameData)){
+  gameData$X_LOC[i] <- -1 * as.double(gameData$baseline[i] * 500)
+  gameData$Y_LOC[i] <- as.double(gameData$sideline[i] * 940)
+  gameData$pointsPerShot[i] <- as.double(gameData$makes[i] * gameData$point[i])
+}
+#If you just want shots at the basket
+gameData <- gameData %>% filter(gameData$X_LOC >= -50, gameData$X_LOC <= 50, gameData$Y_LOC <= 50, gameData$Y_LOC >= -11)
+
+grid.a <- sort(unique(gameData$X_LOC))
+grid.b <- sort(unique(gameData$Y_LOC))
+
+nrow(gameData)
 
 
 store <- c()
 reps <- 1000
 
-
 for(i in 1:reps){
-  x <- sample_n(fullData, size = nrow(fullData))
-  a <- x[1:shotsInQTR + 0,]
-  b <- x[478: 8493,]
+  x <- sample_n(gameData, size = nrow(gameData))
   
+  sample1 <- x[1:949,]
+  sample2 <- x[950: 2067,]
   
-  randomOne <- kde2d(a$X_LOC, a$Y_LOC, lims = c(-250, 250, -20, 375))
-  randomTwo <- kde2d(b$X_LOC, b$Y_LOC, lims = c(-250, 250, -20, 375))
+  #Restructure SAMPLE1
+  #The following code is so that we can get n, ppsAve for each location
+  nvalues <- sample1 %>% group_by(X_LOC, Y_LOC) %>% count() 
+  dupShots <- sample1 %>% left_join(nvalues)
 
+  sumShots <- dupShots %>% group_by(X_LOC, Y_LOC) %>% mutate(pps = sum(pointsPerShot))
+
+  #Now you have the pps for each location
+  sample1$n <- sumShots$n
+  sample1$ppsAve <- sumShots$pps/sumShots$n
+
+  sample1 <- sample1 %>% arrange(X_LOC, Y_LOC)
+  sample1 <- sample1 %>% distinct(X_LOC, Y_LOC, .keep_all = TRUE) %>% arrange(X_LOC, Y_LOC)
   
-  value <- sum(abs(randomOne$z - randomTwo$z))
+  
+  #Restructure SAMPLE2
+  #The following code is so that we can get n, ppsAve for each location
+  nvalues1 <- sample2 %>% group_by(X_LOC, Y_LOC) %>% count() 
+  dupShots1 <- sample2 %>% left_join(nvalues1)
+
+  sumShots1 <- dupShots1 %>% group_by(X_LOC, Y_LOC) %>% mutate(pps = sum(pointsPerShot))
+
+  #Now you have the pps for each location
+  sample2$n <- sumShots1$n
+  sample2$ppsAve <- sumShots1$pps/sumShots1$n
+
+  sample2 <- sample2 %>% arrange(X_LOC, Y_LOC)
+  sample2 <- sample2 %>% distinct(X_LOC, Y_LOC, .keep_all = TRUE) %>% arrange(X_LOC, Y_LOC)
+  
+  
+  
+  #a <- covGen(grid.a, grid.b, lam = 47)
+  
+  #First sample
+  b1 <- yVals(grid.a, grid.b, sample1)
+  c1 <- finalFunction(a, b1$tempY, b1$tempSig)
+  k <- 1
+  mean.fit1 <- matrix(0, nrow = length(grid.a), ncol = length(grid.b))
+    for (i in 1:length(grid.a)) {
+      for (j in 1:length(grid.b)) {
+        mean.fit1[i, j] <- c1$mean[k]
+        k <- k + 1
+      }
+    }
+  #Second Sample
+  b2 <- yVals(grid.a, grid.b, sample2)
+  c2 <- finalFunction(a, b2$tempY, b2$tempSig)
+  k <- 1
+  mean.fit2 <- matrix(0, nrow = length(grid.a), ncol = length(grid.b))
+    for (i in 1:length(grid.a)) {
+      for (j in 1:length(grid.b)) {
+        mean.fit2[i, j] <- c2$mean[k]
+        k <- k + 1
+      }
+    }
+
+  value <- sum((mean.fit1 - mean.fit2))
   store <- c(store, value)
   
 }
@@ -297,190 +468,8 @@ mean(store > checkVal)
 
 ```
 
-```{r}
-p2
-```
 
 
 
-
-gameData$playerDefending[i] <- ifelse((gameData$shootingTeam != "PHX" &
-                                 (gameData$H1[i] == defendingPlayer | 
-                                  gameData$H2[i] == defendingPlayer |
-                                  gameData$H3[i] == defendingPlayer |
-                                  gameData$H4[i] == defendingPlayer |
-                                  gameData$H5[i] == defendingPlayer |
-                                  gameData$A1[i] == defendingPlayer |
-                                  gameData$A2[i] == defendingPlayer |
-                                  gameData$A3[i] == defendingPlayer |
-                                  gameData$A4[i] == defendingPlayer |
-                                  gameData$A5[i] == defendingPlayer)), TRUE, FALSE)
-
-
-
-
-
-threePointers <- filterOut %>% filter(point == 3)
-twoPointers <- filterOut %>% filter(point == 2)
-
-
-x1Three <- threePointers$X_LOC
-x2Three <- threePointers$Y_LOC
-yThree <- threePointers$pointsPerShot
-
-x1Two <- twoPointers$X_LOC
-x2Two <- twoPointers$Y_LOC
-yTwo <- twoPointers$pointsPerShot
-
-
-
-
-grid <- c()
-grid.2 <- c()
-grid.3 <- c()
-p <- 0
-for (i in 1:length(grid.a)) {
-  for (j in 1:length(grid.b)) {
-    #if three pointer
-    if ((grid.b[j] < 100 & (grid.a[i] >220 | grid.a[i] < -220)) | (grid.b[j]>=100 &       (sqrt(grid.b[j]^2 + grid.a[i]^2) > 237))){
-    grid.3 <- rbind(grid.3, c(grid.a[i], grid.b[j]))
-    
-    }
-    else{
-    grid.2 <- rbind(grid.2, c(grid.a[i], grid.b[j]))
-    
-    }
-  }
-}
-
-
-#code that really does the work
-start.time <- Sys.time()
-
-xTwo <- cbind(x1Two,x2Two)
-xThree <- cbind(x1Three, x2Three)
-
-fit.2 <- gpreg(xTwo, yTwo, lam=47, sig=.5, design=grid.2)
-fit.3 <- gpreg(xThree, yThree, lam=47, sig=.5, design=grid.3)
-
-end.time <- Sys.time()
-timeElapsed <- end.time-start.time
-
-k <- 1
-p <- 1
-mean.fit <- matrix(0, nrow=length(grid.a), ncol=length(grid.b))
-for (i in 1:length(grid.a)) {
-  for (j in 1:length(grid.b)) {
-    #We will have fit.2 and fit.3 and Ill need to check which of those fits has the means estimate for that point
-    #Does grid.2 have this point? and if it does then grab fit.2$mean at that point
-    if ((grid.b[j] < 100 & (grid.a[i] >220 | grid.a[i] < -220)) | (grid.b[j]>=100 &       (sqrt(grid.b[j]^2 + grid.a[i]^2) > 237))){
-      mean.fit[i,j] <- fit.3$mean[k]
-       k <- k + 1
-    }
-      else{
-       mean.fit[i,j] <- fit.2$mean[p]
-       p <- p + 1
-      }
-  }
-}
-
-
-
-
-
-
-#Most important 
-
-
-gpreg <- function(x, y, lam, sig, design) {
-  # Evaluates mean and covariance of GP at grid of points on [0,1]
-  # Inputs:
-  # x, y: input and output values of data set
-  # lam: smoothing parameter in RBF kernel
-  # sig: error standard deviation of y
-  # design: grid of points to evaluate the GP
-  # Returns:
-  # mean=posterior mean, vars=posterior variance, and design=evaluation points
-  n <- length(y)
-  Sigma <- matrix(0,nrow=n+nrow(design), ncol=n+nrow(design))
-  
-  all <- rbind(x, design)
-  for (i in 1:nrow(Sigma)) {
-    for (j in i:nrow(Sigma))
-      # if ((y < 100 & (x >220 | x < -220)) | (y>=100 & (sqrt(y^2 + x^2) > 237))
-      # then 3 pointer else 2 pointer
-      
-      Sigma[i,j] <- rbf.k(all[i,], all[j,], lam) -> Sigma[j,i]
-  }
-  S11 <- Sigma[1:n, 1:n]
-  print(S11)
-  S12 <- Sigma[1:n, (n+1):ncol(Sigma)]
-  S21 <- Sigma[(n+1):ncol(Sigma), 1:n]
-  S22 <- Sigma[(n+1):ncol(Sigma),(n+1):ncol(Sigma)]
-  #sig shows up, how many shots at the grid point 
-  # sig would be an n length vector
-  inv <- S21%*%solve(S11+sig^2*diag(n))
-  
-  #y would be, at every grid point what is the average grid point
-  mean <- inv%*%y
-  cov <- S22-inv%*%S12
-  vars <- diag(cov)
-  return(list(mean=mean, vars=vars))
-}
-
-
-#Most Important ^
-
-
-
-
-
-
-
-
-
-
-tempY <- c()
-tempSig <- c()
-counter <- 1
-
-for(i in 1:length(xLocs)){
-  for(j in 1:length(yLocs)){
-    if(!is.na(gameData$X_LOC[counter]) & gameData$X_LOC[counter] == xLocs[i] & gameData$Y_LOC[counter] == yLocs[j]){
-        tempY <- c(tempY, gameData$ppsAve[counter])
-        tempSig <- c(tempSig, 1/sqrt(gameData$n[counter]))
-        counter <- counter + 1
-    }else{
-        tempY <- c(tempY, 0)
-        tempSig <- c(tempSig, 1000)
-      }
-  }
-}
-
-
-
-
-
-for(i in 1:nrow(gameData)){
-  if(gameData$X_LOC[i] == xLocs[counter] & gameData$Y_LOC[i] == yLocs[counter]){
-    tempY[i] <- gameData$ppsAve[i]
-    tempSig[i] <- 1/sqrt(gameData$n[i])
-  }
-  else{
-    tempY[i] <- 0
-    tempSig[i] <- 1000
-    counter <- counter + 1
-  }
-}
-
-
-  #gameData$shootingTeam[i] <- ifelse((gameData$home.shot[i] == TRUE & gameData$home.team[i] == 'PHX') | (gameData$home.shot[i] == FALSE & gameData$away.team[i] == 'PHX'), TRUE, FALSE)
-
-
-
-
-if(y < 100 & (x >220 | x < -220)) | (y>=100 & (y^2 + x^2) > 237)){
-
-((y < 100 & (x >220 | x < -220)) | (y>=100 & (sqrt(y^2 + x^2) > 237)))
 
 
