@@ -19,40 +19,49 @@ for (i in 1:nrow(TeamInfo)) {
     TeamInfo[i,2] <- paste('0', sep="", TeamInfo[i,2])
 }
 
+
+
 ```
 
 Import the schedule
 ```{r}
 sched <- read.csv("~/Desktop/Thesis/ThesisBasketball/nba-full-schedule-2019-2020.csv")
 
+TeamInfo
+
 ```
 
 Let's find all the Suns' games
 ```{r}
-played <- which(sched$away_team=='NOP' | sched$home_team=='NOP')[1:64]
-#games <- list()
+
+sched
+played <- which(sched$away_team=='PHX' | sched$home_team=='PHX')[1:64]
+TeamInfo$Team <- levels(sched$home_team[game])
+
 
 total <- c()
 
 for (i in 1:length(played)){
   tempData <- nba.data(played[[i]])
   total <- rbind(total, tempData)
-
 }
 
 
+tempData
 
 for(i in 1:nrow(total)){
   total$shootingTeam[i] <- ifelse(total$home.shot[i] == TRUE, as.character(total$home.team[1]), as.character(total$away.team[1]))
 }
+total
 
-write.csv(total, "totalPelicansGames.csv")
+#write.csv(total, "totalPelicansGames.csv")
 
 ```
 Error in if (sum(players[[i]] == enter) == 0) { : missing value where TRUE/FALSE needed
 
 Create the urls 
 ```{r}
+game <- 47
 make.url <- function(game) {
   date <- sched$game_date[game]
   slashes <- gregexpr('/', date)[[1]]
@@ -66,7 +75,13 @@ make.url <- function(game) {
   game.url <- str_to_lower(paste(sep="", 'https://sports.yahoo.com/nba/', gsub(" ", "-",   sched[game,]$away_team_full_name),'-', gsub(" ", "-", sched[game,]$home_team_full_name),'-','20',year,mo,day, TeamInfo$TeamNum[which(TeamInfo$Team==sched$home_team[game])],'/?section=gamestream'))
   game.url
 }
+
+
 ```
+
+game.url <- str_to_lower(paste(sep="", 'https://sports.yahoo.com/nba/', gsub(" ", "-",   sched[game,]$away_team_full_name),'-', gsub(" ", "-", sched[game,]$home_team_full_name),'-','20',year,mo,day, TeamInfo$TeamNum[which(TeamInfo$Team==sched$home_team[game])],'/?section=gamestream'))
+
+
 
 ```{r}
 to.seconds <- function(time) {
@@ -85,6 +100,7 @@ to.seconds <- function(time) {
 
 ```{r}
 game <- played[[47]]
+
 
 nba.data <- function(game) {
   game.url <- make.url(game)
@@ -166,7 +182,8 @@ nba.data <- function(game) {
   secs <- c()
   for (i in 1:length(clock))
     secs[i] <- to.seconds(clock[i])
-  hoopers <- get.lineups(url)
+    hoopers <- get.lineups(url)
+
   lineups <- on.court(url)
   home.shooter <- c()
   

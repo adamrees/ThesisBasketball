@@ -31,19 +31,11 @@ library(rapportools)
 5958
 #First, get the whole dataset up and running
 ```{r}
-gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalSunsGames.csv")
+gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalPelicansGames.csv")
+gameData
 gameData <- gameData %>% filter(gameData$point != 1)
 
-```
 
-#Run *if* you are doing a randomization test for one player
-```{r}
-
-```
-
-
-#Get the rest of the dataset up and running
-```{r}
 gameData$pointsPerShot <- NULL
 gameData$X_LOC <- NULL
 gameData$Y_LOC <- NULL
@@ -55,9 +47,6 @@ for(i in 1:nrow(gameData)){
   gameData$pointsPerShot[i] <- as.double(gameData$makes[i] * gameData$point[i])
 
 }
-
-#If you just want shots at the basket
-gameData <- gameData %>% filter(gameData$X_LOC >= -50, gameData$X_LOC <= 50, gameData$Y_LOC <= 50, gameData$Y_LOC >= -11)
 
 
 #The following code is so that we can get n, ppsAve for each location
@@ -78,7 +67,7 @@ yLocs <- sort(unique(gameData$Y_LOC))
 gameData <- gameData %>% arrange(X_LOC, Y_LOC)
 gameData <- gameData %>% distinct(X_LOC, Y_LOC, .keep_all = TRUE) %>% arrange(X_LOC, Y_LOC)
 
-
+gameData
 ```
 
 #The functions to run the code
@@ -241,34 +230,29 @@ dev.off()
 persp(grid.a, grid.b, noZeroFit, theta=30, phi=60)
 
 
-image.plot(grid.a, grid.b, mean.fit, col = colorTable)
-
 
 ```
 
-```{r}
-#From when player was in
-p1 <- mean.fit
-#From when player was out
-p2 <- mean.fit
-checkVal<- sum(abs(p1 - p2))
-checkVal
 
-```
 5.321665
 
 
 #Randomization Test
 
+
+#Observed Value Part
 ```{r}
 
-#Get the full dataset back
-gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalSunsGames.csv")
-gameData <- gameData %>% filter(gameData$point != 1, gameData$shootingTeam != "PHX")
+#Get the full dataset 
+#ENTER TEAM AND PLAYER 
 
-gameData <- gameData %>% filter(gameData$shootingTeam != "PHX")
+
+gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalJazzGames.csv")
+gameData <- gameData %>% filter(gameData$point != 1, gameData$shootingTeam != "UTA")
+
+gameData <- gameData %>% filter(gameData$shootingTeam != "UTA")
 gameData$playerDefending <- NULL
-defendingPlayer <- "5958"
+defendingPlayer <- "5197"
 
 
 gameData$playerDefending <- ifelse((gameData$shootingTeam != "PHX" &
@@ -357,23 +341,24 @@ grid.b <- sort(unique(gameData$Y_LOC))
       }
     }
 
-  value <- sum((mean.fit1 - mean.fit2))
+  checkValue <- sum(abs(mean.fit1 - mean.fit2))
 
-  value
+  checkValue
+  
+  
+  playerIn
 ```
+Zion: 6.638908
 
-Ayton: 5.321665
+Gobert: 8.193299
 
+Ayton: 3.016975
 
-
-
-
-
-
+#Randomization Part
 ```{r}
 #Get the full dataset back
-gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalSunsGames.csv")
-gameData <- gameData %>% filter(gameData$point != 1, gameData$shootingTeam != "PHX")
+gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalJazzGames.csv")
+gameData <- gameData %>% filter(gameData$point != 1, gameData$shootingTeam != "UTA")
 gameData$pointsPerShot <- NULL
 gameData$X_LOC <- NULL
 gameData$Y_LOC <- NULL
@@ -457,19 +442,18 @@ for(i in 1:reps){
       }
     }
 
-  value <- sum((mean.fit1 - mean.fit2))
+  value <- sum(abs(mean.fit1 - mean.fit2))
   store <- c(store, value)
   
 }
 
-
-mean(store > checkVal)
+mean(store > checkValue)
 
 
 ```
 
 
+ZION: .767
 
-
-
+Gobert: 0.492
 
