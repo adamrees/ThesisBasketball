@@ -22,6 +22,7 @@ library(tidyr)
 library(MASS)
 library(sp)
 library(gstat)
+library(fields)
 
 
 library(rapportools)
@@ -32,8 +33,7 @@ library(rapportools)
 #First, get the whole dataset up and running
 ```{r}
 gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalPelicansGames.csv")
-gameData
-gameData <- gameData %>% filter(gameData$point != 1)
+gameData <- gameData %>% filter(gameData$point != 1, gameData$shooter == "4139")
 
 
 gameData$pointsPerShot <- NULL
@@ -45,8 +45,9 @@ for(i in 1:nrow(gameData)){
   gameData$X_LOC[i] <- -1 * as.double(gameData$baseline[i] * 500)
   gameData$Y_LOC[i] <- as.double(gameData$sideline[i] * 940)
   gameData$pointsPerShot[i] <- as.double(gameData$makes[i] * gameData$point[i])
-
 }
+
+gameData <- gameData %>% filter(gameData$Y_LOC < 300)
 
 
 #The following code is so that we can get n, ppsAve for each location
@@ -67,7 +68,6 @@ yLocs <- sort(unique(gameData$Y_LOC))
 gameData <- gameData %>% arrange(X_LOC, Y_LOC)
 gameData <- gameData %>% distinct(X_LOC, Y_LOC, .keep_all = TRUE) %>% arrange(X_LOC, Y_LOC)
 
-gameData
 ```
 
 #The functions to run the code
@@ -176,6 +176,8 @@ finalFunction <- function(Sigma, y, sig){
 ```
 
 ```{r}
+grid.a <- xLocs
+grid.b <- yLocs
 a <- covGen(grid.a, grid.b, lam = 47)
 ```
 
@@ -183,8 +185,7 @@ a <- covGen(grid.a, grid.b, lam = 47)
 #Estimate visualizations
 ```{r}
 
-grid.a <- xLocs
-grid.b <- yLocs
+
 
 b <- yVals(grid.a, grid.b, gameData)
 c <- finalFunction(a, b$tempY, b$tempSig)
@@ -200,34 +201,22 @@ for (i in 1:length(grid.a)) {
 }
 
 
-
-plot(gameData$X_LOC, gameData$Y_LOC)
-
-
 #Show the findings!
-library(fields)
-colorTable<- designer.colors(30, c( "blue","lightblue", "pink"  ,"red") )
-
-
-persp(grid.a, grid.b, mean.fit, theta=30, phi=60)
-image(grid.a, grid.b, mean.fit, col = colorTable)
-timeElapsed
-
-image.plot(grid.a, grid.b, mean.fit, col = colorTable)
-#mean.fit
+colorTable<- designer.colors(20, c( "blue","lightblue", "pink"  ,"red") )
 
 #Do not allow for negatives
 h <- mean.fit
 noZeroFit <- ifelse(h < 0, 0, h)
 
-
-png(file="DonovanMitchell.png",width=500, height=360)
-image.plot(grid.a, grid.b, noZeroFit, col = colorTable, main="Donavon Mitchell", sub="FG%: 45.3%, FG3%: 36.4, eFG%: 51.7", xlab="2019-2020 Stats:", ylab="")
-dev.off()
-
-
-
 persp(grid.a, grid.b, noZeroFit, theta=30, phi=60)
+
+#png(file="DonovanMitchell.png",width=500, height=360)
+#image.plot(grid.a, grid.b, noZeroFit, col = colorTable, main="Donavon Mitchell", sub="FG%: 45.3%, FG3%: 36.4, eFG%: 51.7", xlab="2019-2020 Stats:", ylab="")
+#dev.off()
+
+#png(file="JJRedick.png",width=500, height=360)
+image.plot(grid.a, grid.b, noZeroFit, zlim = c(0,2.2), col = colorTable, main="JJ Redick", xlab = "Baseline", ylab= "Sideline")
+#dev.off
 
 
 
@@ -244,18 +233,18 @@ persp(grid.a, grid.b, noZeroFit, theta=30, phi=60)
 ```{r}
 
 #Get the full dataset 
-#ENTER TEAM AND PLAYER 
+#ENTER PLAYER and TEAM
+defendingPlayer <- "5473"
+playersTeam <- "PHX"
 
+#NEED to change Dataset
+gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalSunsGames.csv")
+gameData <- gameData %>% filter(gameData$point != 1, gameData$shootingTeam != playersTeam)
 
-gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalJazzGames.csv")
-gameData <- gameData %>% filter(gameData$point != 1, gameData$shootingTeam != "UTA")
-
-gameData <- gameData %>% filter(gameData$shootingTeam != "UTA")
 gameData$playerDefending <- NULL
-defendingPlayer <- "5197"
 
 
-gameData$playerDefending <- ifelse((gameData$shootingTeam != "PHX" &
+gameData$playerDefending <- ifelse((gameData$shootingTeam != playersTeam &
                                  (gameData$H1 == defendingPlayer | 
                                   gameData$H2 == defendingPlayer |
                                   gameData$H3 == defendingPlayer |
@@ -279,12 +268,17 @@ for(i in 1:nrow(gameData)){
 #If you just want shots at the basket
 gameData <- gameData %>% filter(gameData$X_LOC >= -50, gameData$X_LOC <= 50, gameData$Y_LOC <= 50, gameData$Y_LOC >= -11)
 
+
 grid.a <- sort(unique(gameData$X_LOC))
 grid.b <- sort(unique(gameData$Y_LOC))
 
   
   playerIn <- gameData %>% filter(gameData$playerDefending == TRUE)
   playerOut <- gameData %>% filter(gameData$playerDefending == FALSE)
+  
+  group1 <- nrow(playerIn)
+  group2 <- nrow(playerOut)
+  
   
   #Restructure SAMPLE1
   #The following code is so that we can get n, ppsAve for each location
@@ -345,20 +339,22 @@ grid.b <- sort(unique(gameData$Y_LOC))
 
   checkValue
   
-  
-  playerIn
+
 ```
 Zion: 6.638908
 
 Gobert: 8.193299
 
 Ayton: 3.016975
+5.321665
+
+Booker: 12.74095
 
 #Randomization Part
 ```{r}
 #Get the full dataset back
-gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalJazzGames.csv")
-gameData <- gameData %>% filter(gameData$point != 1, gameData$shootingTeam != "UTA")
+gameData <- read.csv("~/Desktop/Thesis/ThesisBasketball/totalSunsGames.csv")
+gameData <- gameData %>% filter(gameData$point != 1, gameData$shootingTeam != playersTeam)
 gameData$pointsPerShot <- NULL
 gameData$X_LOC <- NULL
 gameData$Y_LOC <- NULL
@@ -369,12 +365,13 @@ for(i in 1:nrow(gameData)){
   gameData$pointsPerShot[i] <- as.double(gameData$makes[i] * gameData$point[i])
 }
 #If you just want shots at the basket
-gameData <- gameData %>% filter(gameData$X_LOC >= -50, gameData$X_LOC <= 50, gameData$Y_LOC <= 50, gameData$Y_LOC >= -11)
+gameData <- gameData %>% filter(gameData$H1 != "NA",   gameData$X_LOC >= -50, gameData$X_LOC <= 50, gameData$Y_LOC <= 50, gameData$Y_LOC >= -11)
+
+nrow(gameData)
 
 grid.a <- sort(unique(gameData$X_LOC))
 grid.b <- sort(unique(gameData$Y_LOC))
 
-nrow(gameData)
 
 
 store <- c()
@@ -383,8 +380,8 @@ reps <- 1000
 for(i in 1:reps){
   x <- sample_n(gameData, size = nrow(gameData))
   
-  sample1 <- x[1:949,]
-  sample2 <- x[950: 2067,]
+  sample1 <- x[1:group1,]
+  sample2 <- x[(group1 + 1):(group1 + group2),]
   
   #Restructure SAMPLE1
   #The following code is so that we can get n, ppsAve for each location
@@ -443,6 +440,7 @@ for(i in 1:reps){
     }
 
   value <- sum(abs(mean.fit1 - mean.fit2))
+
   store <- c(store, value)
   
 }
@@ -455,5 +453,10 @@ mean(store > checkValue)
 
 ZION: .767
 
-Gobert: 0.492
+Gobert: 0.652
+
+Ayton: 0.929
+
+Booker: 0.191
+
 
